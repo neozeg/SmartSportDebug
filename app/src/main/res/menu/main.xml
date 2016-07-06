@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.wellelectronics.blecar2.MainActivity" >
+
+    <!--
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/action_settings"/>
+      	-->
+    <item android:id="@+id/reconnect"
+          android:icon="@drawable/bluetooth"
+          android:title="Reconnect"
+          android:showAsAction="ifRoom|withText"
+        />
+
+</menu>

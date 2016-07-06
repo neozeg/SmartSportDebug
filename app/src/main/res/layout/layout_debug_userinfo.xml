@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="UserInfo"
+                android:id="@+id/textView" />
+
+            <EditText
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/editTextUserInfo1"
+                android:digits="1234567890abcdefABCDEF "
+                android:layout_weight="1" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <Button
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_margin="2dp"
+                android:layout_height="wrap_content"
+                android:text="UserInfo Read"
+                android:id="@+id/buttonUserInfoR"
+                android:layout_column="0" />
+
+            <Button
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_margin="2dp"
+                android:layout_height="wrap_content"
+                android:text="UserInfo Write"
+                android:id="@+id/buttonUserInfoW"
+                android:layout_column="2" />
+        </TableRow>
+    </TableLayout>
+</LinearLayout>
