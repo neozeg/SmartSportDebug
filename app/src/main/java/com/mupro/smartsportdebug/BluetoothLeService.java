@@ -99,7 +99,7 @@ public class BluetoothLeService extends Service {
 				BluetoothGattCharacteristic characteristic, int status) {
 			//super.onCharacteristicWrite(gatt, characteristic, status);
         	broacastUpdate(ACTION_DATA_WRITE,status);
-            Log.w(TAG, "onCharacteristicWrite: " + status);
+            //Log.w(TAG, "onCharacteristicWrite: " + status);
 		}
 
 		@Override

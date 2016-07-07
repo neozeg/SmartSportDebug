@@ -15,6 +15,7 @@
         android:name=".BleApp"
         android:allowBackup="true"
         android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
         android:theme="@style/CustomTheme1" >
         <activity
             android:name=".MainActivity"

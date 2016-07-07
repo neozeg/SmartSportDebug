@@ -40,6 +40,8 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback 
     //private short [] waveCh6DataBuf;
 
     private short [][] waveDataBuf = new short[CHANNEL_NUMBER_MAX][];
+    private short []  waveDataMax = new short[CHANNEL_NUMBER_MAX];
+    private short []  waveDataMin = new short[CHANNEL_NUMBER_MAX];
     public WaveformView(Context context) {
         super(context);
         init();
@@ -193,8 +195,24 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback 
                     if(waveDataBuf[chNo][i]>maxValues[chNo]){
                         maxValues[chNo] = waveDataBuf[chNo][i];
                     }
+
+                if(minValues[chNo] > waveDataMin[chNo])
+                    minValues[chNo] = waveDataMin[chNo];
+                else
+                    waveDataMin[chNo] = minValues[chNo];
+
+                if(maxValues[chNo] < waveDataMax[chNo])
+                    maxValues[chNo] = waveDataMax[chNo];
+                else
+                    waveDataMax[chNo] = maxValues[chNo];
+
+
             }
-            //Log.v(TAG,"min["+chNo+"]="+minValues[chNo] + "\tmax["+chNo+"]="+maxValues[chNo]);
+            //Log.v(TAG,"min["+chNo+"]="+minValues[0] + "\tmax["+chNo+"]="+maxValues[0]);
+
+            //Log.v(TAG,"min["+0+"]="+minValues[0] + "\tMin["+0+"]="+waveDataMin[0]);
+            //Log.v(TAG,"max["+0+"]="+maxValues[0] + "\tMax["+0+"]="+waveDataMax[0]);
+            //Log.v(TAG,"MIN["+0+"]="+waveDataMin[0] + "\tMax["+0+"]="+waveDataMax[0]);
         }
         for(int chNum=0;chNum<ChannelNumber;chNum++){
             for(int i=0;i<lengthMin;i++){
@@ -285,7 +303,7 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback 
 
     public void setDataBuffer6Ch(short[] bufCh1,short[] bufCh2, short[] bufCh3,short[] bufCh4,short[] bufCh5, short[] bufCh6,int buflength){
 
-        Log.v(TAG,"setDataBuffer6Ch");
+        //Log.v(TAG,"setDataBuffer6Ch");
         ChannelNumber = 6;
         for(int i=0;i<ChannelNumber;i++){
             waveDataBuf[i] = new short[buflength> BUFFER_LENTH_MAX ? BUFFER_LENTH_MAX : buflength];
@@ -317,6 +335,9 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback 
         //invalidate();
     }
 
+    public void clearDataRange(){
+        mSurface.clearDataMaxMin();
+    }
 
     private class Surface{
         public int width;
@@ -446,6 +467,12 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback 
             for(int i = 1; i<lengthMin/2;i++){
                 for(int chNo=0;chNo<ChannelNumber;chNo++)
                     wavePaths[chNo].lineTo(wavePointsArray[chNo][i * 2 + 0],wavePointsArray[chNo][i * 2 + 1]);
+            }
+        }
+
+        public void clearDataMaxMin(){
+            for(int i=0;i<CHANNEL_NUMBER_MAX;i++){
+                waveDataMin[i]=waveDataMax[i]=0;
             }
         }
 
