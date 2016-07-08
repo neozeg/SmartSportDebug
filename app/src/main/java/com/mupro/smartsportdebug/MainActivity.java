@@ -25,6 +25,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,6 +37,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,6 +46,7 @@ import com.mupro.smartsportdebug.Views.WaveformView;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,7 +84,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private final static int WAVEFORM_DATA_LENGTH = 64;
 
     private int mConnectState = STATE_DISCONNECTED;
-    private String mDeviceAddress,mDeviceName;
+    private String mDeviceAddress,mDeviceName,mDeviceNewName;
     private PowerManager.WakeLock mWakeLock;
 
     private boolean isWorking = false;
@@ -90,19 +93,20 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
 
     //private Button mBtnLt,mBtnRt,mBtnUp,mBtnDn,mBtnF1,mBtnF2;
     private WaveformView mWaveformView1;
+    private ScrollView mSVDebugMsg,mSVDebugScope;
     private Button mBtnScPress,mBtnScRoll,mBtnSc3d;
     private TextView mTvCh1,mTvCh2,mTvCh3,mTvCh4,mTvCh5,mTvCh6;
     private TextView mTvMsgCh1,mTvMsgCh2,mTvMsgCh3,mTvMsgCh4,mTvMsgCh5,mTvMsgCh6;
     private TextView mTvTxMessage,mTvRxMessage,mTvVersion,mTvDeviceName;
     private Button mBtnDevice;
     private Button mBtnCmd1,mBtnCmd2,mBtnCmd3,mBtnCmd4,mBtnCmd5,mBtnCmd6,mBtnCmd7,mBtnCmd8;
-    private Button mBtnPBSet0,mBtnPBSetM,mBtnAWSet0,mBtnAWSetM,mBtnRBSet0,mBtnRBSet1,mBtnRBSet2,mBtnGsenReset,mBtnGyroReset;
+    private Button mBtnPressReset,mBtnPressCalibrate,mBtnGyroReset;
     private Button mBtnResBP1R,mBtnResBP2R,mBtnResBP3R,mBtnResBP4R,mBtnResBP1L,mBtnResBP2L,mBtnResBP3L,mBtnResBP4L;
     private Button mBtnOTAEnterR,mBtnOTABlankR,mBtnOTAEraseR,mBtnOTAProgramR,mBtnOTAVerifyR,mBtnOTAExitR;
     private Button mBtnOTAEnterL,mBtnOTABlankL,mBtnOTAEraseL,mBtnOTAProgramL,mBtnOTAVerifyL,mBtnOTAExitL;
     //private TextView mTvInfoProp,mTvInfoDevice,mTvInfo0,mTvInfo1,mTvInfo2,mTvInfo3,mTvInfo4,mTvInfo5,mTvInfo6,mTvInfo7,mTvInfo8,mTvInfo9,mTvInfo10,mTvInfoDebug;
     private TextView mTvMsg00,mTvMsg01,mTvMsg10,mTvMsg11,mTvMsg12,mTvMsg20,mTvMsg21,mTvMsg22,mTvMsg30,mTvMsg31,mTvMsg32,mTvMsg40,mTvMsg50,mTvMsg60,mTvInfoDebug;
-    private EditText mEtHeight,mEtWeight;
+    private EditText mEtHeight,mEtWeight,mEtInfoReserved,mEtInfoPushbar,mEtInfoAbsWheel,mEtInfoPressMaxL,mEtInfoPressMaxR;
     private EditText mEtUserId[];
     private Button mBtnUserInfoR,mBtnUserInfoW;
 
@@ -180,26 +184,35 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private short[] pitchDataR = new short[WAVEFORM_DATA_LENGTH];
     private short[] rollDataL = new short[WAVEFORM_DATA_LENGTH];
     private short[] rollDataR = new short[WAVEFORM_DATA_LENGTH];
-    private short[] axDataL = new short[WAVEFORM_DATA_LENGTH];
-    private short[] ayDataL = new short[WAVEFORM_DATA_LENGTH];
-    private short[] azDataL = new short[WAVEFORM_DATA_LENGTH];
-    private short[] gxDataL = new short[WAVEFORM_DATA_LENGTH];
-    private short[] gyDataL = new short[WAVEFORM_DATA_LENGTH];
-    private short[] gzDataL = new short[WAVEFORM_DATA_LENGTH];
-    private short[] axDataR = new short[WAVEFORM_DATA_LENGTH];
-    private short[] ayDataR = new short[WAVEFORM_DATA_LENGTH];
-    private short[] azDataR = new short[WAVEFORM_DATA_LENGTH];
-    private short[] gxDataR = new short[WAVEFORM_DATA_LENGTH];
-    private short[] gyDataR = new short[WAVEFORM_DATA_LENGTH];
-    private short[] gzDataR = new short[WAVEFORM_DATA_LENGTH];
+    private short gDataArrayL[][] = new short[6][WAVEFORM_DATA_LENGTH];
+    private short gDataArrayR[][] = new short[6][WAVEFORM_DATA_LENGTH];
+    //private short[] axDataL = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] ayDataL = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] azDataL = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] gxDataL = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] gyDataL = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] gzDataL = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] axDataR = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] ayDataR = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] azDataR = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] gxDataR = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] gyDataR = new short[WAVEFORM_DATA_LENGTH];
+    //private short[] gzDataR = new short[WAVEFORM_DATA_LENGTH];
 
     private AppCommands appCmd = new AppCommands();
 
     //info data
     private int valPressureL,valPressureR;
     private int valPressureRawL,valPressureRawR;
-    private int valAxL,valAyL,valAzL,valGxL,valGyL,valGzL;
-    private int valAxR,valAyR,valAzR,valGxR,valGyR,valGzR;
+
+    //private int maxAxL,maxAyL,maxAzL,maxGxL,maxGyL,maxGzL;
+    //private int maxAxR,maxAyR,maxAzR,maxGxR,maxGyR,maxGzR;
+    //private int minAxL,minAyL,minAzL,minGxL,minGyL,minGzL;
+    //private int minAxR,minAyR,minAzR,minGxR,minGyR,minGzR;
+    //private int valAxL,valAyL,valAzL,valGxL,valGyL,valGzL;
+    //private int valAxR,valAyR,valAzR,valGxR,valGyR,valGzR;
+    private int valGensorL[] = new int[6];
+    private int valGensorR[] = new int[6];
     private int valYawL,valPitchL,valRollL,valYawR,valPitchR,valRollR;
 
     private int deviceTxPowerSel=2;
@@ -403,6 +416,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             updateConnectionState();
             mDeviceAddress = bleApp.manager.bleDevice.getAddress();
             mDeviceName = bleApp.manager.bleDevice.getName();
+            mDeviceNewName = DeviceRename.getNewName(mDeviceAddress);
             mTvDeviceName.setText(mDeviceName);
             saveConnectConfig();
 
@@ -588,6 +602,8 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private final static int MSG_SEND_BLE_CANCEL = 4;
     private final static int MSG_SENSOR_SET_ZERO = 5;
     private final static int MSG_SHOW_WAITING_FEEDBACK_DIALOG = 6;
+    private final static int MSG_SHOW_NOTICE_DIALOG = 7;
+    private final static String  EXTRA_DIALOG_TITLE = "extra.dialog.title";
 
     private final static String MSG_BLE_BUFFER = "message_ble_buffer";
     private Handler mMsgHandler = new Handler(){
@@ -639,22 +655,36 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     updateDebugInfo("Upload Canceled!!!");
                     break;
                 case MSG_SHOW_WAITING_FEEDBACK_DIALOG:
-                    startSpinnerProgressDialog();
+                    String pdTitle = msg.getData().getString(EXTRA_DIALOG_TITLE);
+                    mProgressDialog = new ProgressDialog(MainActivity.this);
+                    mProgressDialog.setTitle(pdTitle);
+                    mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+                    mProgressDialog.show();
+                    break;
+                case MSG_SHOW_NOTICE_DIALOG:
+                    if(mProgressDialog!=null)mProgressDialog.dismiss();
+                    String dTitle = msg.getData().getString(EXTRA_DIALOG_TITLE);
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setTitle(dTitle);
+                    builder.setCancelable(true);
+                    AlertDialog dialog = builder.create();
+                    dialog.show();
                     break;
             }
         }
 
     };
+    private static int AVG_DIFF_TH = 50;
     private int[] AvgSample1,AvgSample2;
     private int AvgResult1,AvgResult2;
     private int samplePointer;
     private int setZeroType;
+    private boolean sampleSendLeft = true;
     private void startAvgSampling(){
         AvgSample1 = new int[AVG_SAMPLE_DURATION/AVG_SAMPLE_INTERVAL];
         AvgSample2 = new int[AVG_SAMPLE_DURATION/AVG_SAMPLE_INTERVAL];
         samplePointer=0;
         avgSamplingTimer.postDelayed(avgSamplingRunnable,AVG_SAMPLE_INTERVAL);
-        sendReportCmd();
         updateDebugInfo("Start Average Sampling");
     }
     private void stopAvgSamplingGSensor(){
@@ -779,10 +809,14 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     break;
                 case SENSOR_SET_ZERO_GSENSOR:
                     if(samplePointer < 300){
-                        sendBleData(appCmd.txCmdB_50);
+                        if(samplePointer%2 == 0)
+                            sendBleData(appCmd.txCmdF_1);
+                        else
+                            sendBleData(appCmd.txCmdF_2);
                         samplePointer++;
                         avgSamplingTimer.postDelayed(this, AVG_SAMPLE_INTERVAL);
                         updateDebugInfo("Initializing Gsensor..."+samplePointer);
+
                     }else{
                         stopAvgSamplingGSensor();
                         updateDebugInfo("Initialize Gsensor Failed, No response");
@@ -935,6 +969,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
 
     }
     private void setupPageScopeViewComponents(){
+        mSVDebugScope = (ScrollView) findViewById(R.id.scrollViewWaveform);
         mWaveformView1 = (WaveformView) findViewById(R.id.WaveformView1);
         //mWaveformView1.setZOrderOnTop(true);
         //mWaveformView1.getHolder().setFormat(PixelFormat.TRANSLUCENT);
@@ -989,10 +1024,13 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         mTvCh5.setOnClickListener(mOCLPageScope);
         mTvCh6.setOnClickListener(mOCLPageScope);
         /**/
-
-
+    }
+    private void switchToDebugMsgExt(){
+        viewPagerTop.setCurrentItem(1,true);
+        mSVDebugScope.arrowScroll(ScrollView.FOCUS_DOWN);
     }
     private void setupPageMessageViewComponents(){
+        mSVDebugMsg = (ScrollView)findViewById(R.id.scrollViewDebugMessage);
         mTvTxMessage = (TextView) findViewById(R.id.tvTxMessage);
         mTvRxMessage = (TextView) findViewById(R.id.tvRxMessage);
         mTvMsg00 = (TextView) findViewById(R.id.tvMsg00);
@@ -1054,23 +1092,11 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     }
     private void setupPageSensorResetViewComponents() {
         //mBtnPBSet0,mBtnPBSetM,mBtnAWSet0,mBtnAWSetM,mBtnRBSet0,mBtnRBSet1,mBtnRBSet2
-        mBtnPBSet0 = (Button) findViewById(R.id.buttonPBSet0);
-        mBtnPBSetM = (Button) findViewById(R.id.buttonPBSetM);
-        mBtnAWSet0 = (Button) findViewById(R.id.buttonAbsSet0);
-        mBtnAWSetM = (Button) findViewById(R.id.buttonAbsSetM);
-        mBtnRBSet0 = (Button) findViewById(R.id.buttonResSet0);
-        mBtnRBSet1 = (Button) findViewById(R.id.buttonResSet1);
-        mBtnRBSet2 = (Button) findViewById(R.id.buttonResSet2);
-        mBtnGsenReset = (Button) findViewById(R.id.buttonGsReset);
+        mBtnPressReset = (Button) findViewById(R.id.buttonPressReset);
+        mBtnPressCalibrate = (Button) findViewById(R.id.buttonPressCal);
         mBtnGyroReset = (Button) findViewById(R.id.buttonGyroReset);
-        mBtnPBSet0.setOnClickListener(mOCLPageSensorReset);
-        mBtnPBSetM.setOnClickListener(mOCLPageSensorReset);
-        mBtnAWSet0.setOnClickListener(mOCLPageSensorReset);
-        mBtnAWSetM.setOnClickListener(mOCLPageSensorReset);
-        mBtnRBSet0.setOnClickListener(mOCLPageSensorReset);
-        mBtnRBSet1.setOnClickListener(mOCLPageSensorReset);
-        mBtnRBSet2.setOnClickListener(mOCLPageSensorReset);
-        mBtnGsenReset.setOnClickListener(mOCLPageSensorReset);
+        mBtnPressReset.setOnClickListener(mOCLPageSensorReset);
+        mBtnPressCalibrate.setOnClickListener(mOCLPageSensorReset);
         mBtnGyroReset.setOnClickListener(mOCLPageSensorReset);
     }
     private void setupPageResBandViewComponents(){
@@ -1109,6 +1135,11 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         mEtUserId[7] = (EditText) findViewById(R.id.editTextUserId7);
         mEtHeight = (EditText)findViewById(R.id.editTextHeight);
         mEtWeight = (EditText)findViewById(R.id.editTextWeight);
+        mEtInfoReserved = (EditText) findViewById(R.id.editTextInfoReserved);
+        mEtInfoPushbar= (EditText)findViewById(R.id.editTextInfoPushupBar);
+        mEtInfoAbsWheel= (EditText)findViewById(R.id.editTextInfoAbsWheel);
+        mEtInfoPressMaxL= (EditText)findViewById(R.id.editTextInfoPressL);
+        mEtInfoPressMaxR= (EditText)findViewById(R.id.editTextInfoPressR);
         for(int i=0;i<mEtUserId.length;i++){
             final int id = i;
             mEtUserId[i].addTextChangedListener(new TextWatcher() {
@@ -1125,10 +1156,12 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                 public void afterTextChanged(Editable s) {
                     int length = s.toString().length();
                     if(length == 2){
+                        //mEtUserId[id].setText(mEtUserId[id].getText().toString().toUpperCase());
                         if(id<mEtUserId.length-1){
                             if(mEtUserId[id].isFocused()){
                                 mEtUserId[id].clearFocus();
                                 mEtUserId[id+1].requestFocus();
+                                mEtUserId[id+1].selectAll();
                             }
                         }
                     }
@@ -1205,6 +1238,11 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         mBtnBleTxPowerSubmit.setOnClickListener(mOCLPageBLERename);
         mEtOldBleName =(EditText)findViewById(R.id.editTextOldBLEName);
         mEtNewBleName = (EditText) findViewById(R.id.editTextNewBLEName);
+        mEtOldBleName.setEnabled(false);
+        mEtNewBleName.setEnabled(false);
+        if (mDeviceNewName.length() > 0 && mDeviceNewName != null) {
+            mEtNewBleName.setText(mDeviceNewName);
+        }
         mEtOldBleName.setText(mDeviceName);
 
         mRBTx0 = (RadioButton) findViewById(R.id.radioButtonTx0);
@@ -1283,7 +1321,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         mTvCh6.setText("gz(L)");
         mWaveformView1.clearDataRange();
         setWaveEnable(6,true);
-        playWaveform6Ch(axDataL, ayDataL, azDataL, gxDataL, gyDataL, gzDataL);
+        playWaveform6Ch(gDataArrayL[0], gDataArrayL[1], gDataArrayL[2], gDataArrayL[3], gDataArrayL[4], gDataArrayL[5]);
     }
     private void changeScopeDisplay6AxisRight(){
         mScopeSel=SCOPE_SEL_6AXIS_RIGHT;
@@ -1295,7 +1333,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         mTvCh6.setText("gz(R)");
         mWaveformView1.clearDataRange();
         setWaveEnable(6,true);
-        playWaveform6Ch(axDataR, ayDataR, azDataR, gxDataR, gyDataR, gzDataR);
+        playWaveform6Ch(gDataArrayR[0], gDataArrayR[1], gDataArrayR[2], gDataArrayR[3], gDataArrayR[4], gDataArrayR[5]);
 
     }
 
@@ -1368,32 +1406,11 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         public void onClick(View v) {
             stopContinueReportCmd();
             //mBtnPBSet0,mBtnPBSetM,mBtnAWSet0,mBtnAWSetM,mBtnRBSet0,mBtnRBSet1,mBtnRBSet2
-            if(v.getId() == mBtnPBSet0.getId()){
-                setZeroType = SENSOR_SET_ZERO_PUSHBAR_SET_ZERO;
-                startAvgSampling();
-            }else if(v.getId() == mBtnPBSetM.getId()){
-                setZeroType = SENSOR_SET_ZERO_PUSHBAR_SET_MAX;
-                startAvgSampling();
-            }else if(v.getId() == mBtnAWSet0.getId()){
-                setZeroType = SENSOR_SET_ZERO_ABSWHEEL_SET_ZERO;
-                startAvgSampling();
-            }else if(v.getId() == mBtnAWSetM.getId()){
-                setZeroType = SENSOR_SET_ZERO_ABSWHEEL_SET_MAX;
-                startAvgSampling();
-            }else if(v.getId() == mBtnRBSet0.getId()){
-                setZeroType = SENSOR_SET_ZERO_RESBAND_SET_0;
-                startAvgSampling();
-            }else if(v.getId() == mBtnRBSet1.getId()){
-                setZeroType = SENSOR_SET_ZERO_RESBAND_SET_1;
-                startAvgSampling();
-            }else if(v.getId() == mBtnRBSet2.getId()){
-                setZeroType = SENSOR_SET_ZERO_RESBAND_SET_2;
-                startAvgSampling();
-            }else if(v.getId() == mBtnGsenReset.getId()){
+            //
+            if(v.getId() == mBtnGyroReset.getId()){
                 setZeroType = SENSOR_SET_ZERO_GSENSOR;
-                startAvgSampling();
-            }else if(v.getId() == mBtnGyroReset.getId()){
-                setZeroType = SENSOR_SET_ZERO_GYROSENSOR;
+                createProgressDialog("Please keep the handle steady");
+                startCheckIfGSensorSteady();
                 startAvgSampling();
             }
         }
@@ -1436,6 +1453,11 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                 int weight = Integer.parseInt(strWeight);
                 byte[] weightData = intToBytes(weight);
                 appCmd.txCmd8_w[13]=weightData[0];
+
+                String strValReserved = mEtInfoReserved.getText().toString();
+                if(strValReserved.equals(""))strValReserved="0";
+                int valReserved = Integer.parseInt(strValReserved);
+                appCmd.txCmd8_w[14] = (byte) valReserved;
 
 
                 //sendBleData(appCmd.txCmd8_w);
@@ -1519,13 +1541,13 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         @Override
         public void onClick(View v) {
             if (v.getId() == mBtnBleRenameSubmit.getId()) {
-                String newName = mEtNewBleName.getText().toString();
-                ;
-                if (newName.length() < 1 || newName == null) {
-                    newName = mDeviceName;
+                //String newName = mEtNewBleName.getText().toString();
+                if (mDeviceNewName.length() > 0 && mDeviceNewName != null) {
+                    mEtNewBleName.setText(mDeviceNewName);
+                }else{
+                    return;
                 }
-                mEtNewBleName.setText(newName);
-                byte[] nameData = newName.getBytes();
+                byte[] nameData = mDeviceNewName.getBytes();
                 appCmd.txCmdD = new byte[nameData.length + 3];
                 appCmd.txCmdD[0] = (byte) 0xAA;
                 appCmd.txCmdD[1] = (byte) (nameData.length + 2);
@@ -1539,11 +1561,13 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                 //updateDebugInfo(bytesToString(appCmd.txCmdD, " "));
 
             } else if (v.getId() == mBtnBleTxPowerSubmit.getId()) {
+                /*
                 appCmd.txCmdE[3] = (byte)deviceTxPowerSel;
                 dataBytes = new byte[appCmd.txCmdE.length];
                 System.arraycopy(appCmd.txCmdE,0,dataBytes,0,dataBytes.length);
                 afterConfirmWriteStep = CONFIRM_BLE_TXPOWER;
                 mConfirmWriteDialog.show();
+                */
 
             } else if (v.getId() == mRBTx0.getId()) {
                 deviceTxPowerSel = 0;
@@ -1800,10 +1824,12 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     case CONFIRM_BLE_RENAME:
                         afterConfirmWriteStep = 0;
                         disconnectDevice(300);
+                        createNoticeDialog("Device Restarted for Renaming");
                         break;
                     case CONFIRM_BLE_TXPOWER:
                         afterConfirmWriteStep = 0;
                         disconnectDevice(300);
+                        createNoticeDialog("Device Restarted for Setting Tx power");
                         break;
                     case CONFIRM_SENSOR_RESET:
                         afterConfirmWriteStep = 0;
@@ -1835,17 +1861,28 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
 
         updateConnectionState();
     }
-
-    private void startSpinnerProgressDialog(){
-        mProgressDialog = new ProgressDialog(this);
-        mProgressDialog.setTitle("Waiting for Feedback");
-        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        mProgressDialog.show();
+    private void createProgressDialog(String title){
+        Message msg = new Message();
+        msg.what = MSG_SHOW_WAITING_FEEDBACK_DIALOG;
+        Bundle data = new Bundle();
+        data.putString(EXTRA_DIALOG_TITLE,title);
+        msg.setData(data);
+        mMsgHandler.sendMessage(msg);
     }
+    private void createNoticeDialog(String title){
+        Message msg = new Message();
+        msg.what = MSG_SHOW_NOTICE_DIALOG;
+        Bundle data = new Bundle();
+        data.putString(EXTRA_DIALOG_TITLE,title);
+        msg.setData(data);
+        mMsgHandler.sendMessage(msg);
+    }
+
 
     private final void updateDebugInfo(String string){
         mTvInfoDebug.setText(string);
         mTvInfoDebug.startAnimation(mBlinkAnimation);
+        mSVDebugMsg.fullScroll(ScrollView.FOCUS_DOWN);
     }
     private void clearInfoDisplay(){
         //mTvMsg00.setText("-");
@@ -2125,6 +2162,62 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             }
         }).start();
     }
+    private boolean isCheckGSensorSteady = false;
+    private int checkSensorLCnt = 0;
+    private int checkSensorRCnt = 0;
+
+    private void startCheckIfGSensorSteady(){
+        isCheckGSensorSteady = true;
+        checkSensorLCnt = 0;
+        checkSensorRCnt = 0;
+    }
+    private void stopCheckIfGSensorSteady(){
+        isCheckGSensorSteady = false;
+        checkSensorLCnt = 0;
+        checkSensorRCnt = 0;
+    }
+    private boolean checkIfGSensorLSteady(){
+        //check stable?
+        int window = WAVEFORM_DATA_LENGTH  / 2;
+        if(checkSensorLCnt > window){
+            for(int i=3;i<6;i++){
+                int maxL = gDataArrayL[i][gDataArrayL[i].length - 1];
+                int minL = gDataArrayL[i][gDataArrayL[i].length - 1];
+                for(int j=0;j<window/2;j++){
+                    int valL = gDataArrayL[i][gDataArrayL[i].length - 1 - j];
+                    if(maxL < valL)maxL = valL;
+                    if(minL > valL)minL = valL;
+                }
+                if(maxL-minL > AVG_DIFF_TH){
+                    Log.v(TAG,"diffL"+i+"="+(maxL-minL));
+                    return false;
+                }
+            }
+        }
+        checkSensorLCnt ++;
+        return true;
+    }
+    private boolean checkIfGSensorRSteady(){
+        //check stable?
+        int window = WAVEFORM_DATA_LENGTH  / 2;
+        if(checkSensorRCnt > window){
+            for(int i=3;i<6;i++){
+                int maxR = gDataArrayR[i][gDataArrayR[i].length - 1];
+                int minR = gDataArrayR[i][gDataArrayR[i].length - 1];
+                for(int j=0;j<window/2;j++){
+                    int valR = gDataArrayR[i][gDataArrayR[i].length - 1 - j];
+                    if(maxR < valR)maxR = valR;
+                    if(minR > valR)minR = valR;
+                }
+                if(maxR-minR >AVG_DIFF_TH){
+                    Log.v(TAG,"diffR"+i+"="+(maxR-minR));
+                    return false;
+                }
+            }
+        }
+        checkSensorRCnt++;
+        return true;
+    }
 
     private boolean processData(byte[] data){
         if(data.length < 4 || data==null ){
@@ -2147,7 +2240,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         if(dataType == 1){
             clearInfoDisplay();
             int dataTouch = (int)data[3]& 0x03;
-            int handlePosition = (int)data[3] & 0x04;
+            int handlePosition = (int)data[3] & 0x08;
             int rfDistance = (data[3]>>4) & 0x0f;
             int deviceInfoR = (int)data[4]& 0xf0;
             int deviceInfoL = (int)data[4]& 0x0f;
@@ -2158,9 +2251,13 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             int rollR = data[10];
             valPressureL =((data[11] & 0xFF) | ((data[12])<<8));
             valPressureR =((data[13] & 0xFF) | ((data[14])<<8));
-
-            valPressureL =((data[11] & 0xFF) | ((data[12])<<8));
-            valPressureR =((data[13] & 0xFF) | ((data[14])<<8));
+            float pressL = valPressureL * 10 / 1000;
+            float pressR = valPressureR * 10 / 1000;
+            //pressL = 99.998f;
+            //pressR = -999.998f;
+            DecimalFormat format = new DecimalFormat("0.000");
+            String strPressL = "PressL(Kg): " + format.format(pressL);
+            String strPressR = "PressR(Kg): " + format.format(pressR);
             //valPressureRawL =((data[15] & 0xFF) | ((data[16])<<8));
             //valPressureRawR =((data[16] & 0xFF) | ((data[18])<<8));
 
@@ -2176,23 +2273,29 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     break;
 
             }
-
+            int textColor = handlePosition==0?getResources().getColor(android.R.color.white) : getResources().getColor(android.R.color.holo_red_light);
+            int holdBgColor = getResources().getColor(android.R.color.holo_green_dark);
+            int releaseBgColor = getResources().getColor(android.R.color.background_dark);
             switch(dataTouch){
                 case 1://mTvMsg10.setText("Touch L");
-                    mTvMsg00.setTextColor(getResources().getColor(android.R.color.holo_green_light));
-                    mTvMsg01.setTextColor(getResources().getColor(android.R.color.white));
+                    mTvMsg00.setTextColor(textColor);
+                    mTvMsg00.setBackgroundColor(holdBgColor);
+                    mTvMsg01.setBackgroundColor(releaseBgColor);
                     break;
                 case 2://mTvMsg10.setText("Touch R");
-                    mTvMsg00.setTextColor(getResources().getColor(android.R.color.white));
-                    mTvMsg01.setTextColor(getResources().getColor(android.R.color.holo_green_light));
+                    mTvMsg00.setBackgroundColor(releaseBgColor);
+                    mTvMsg01.setTextColor(textColor);
+                    mTvMsg01.setBackgroundColor(holdBgColor);
                     break;
                 case 3://mTvMsg10.setText("Touch L&R");
-                    mTvMsg00.setTextColor(getResources().getColor(android.R.color.holo_green_light));
-                    mTvMsg01.setTextColor(getResources().getColor(android.R.color.holo_green_light));
+                    mTvMsg00.setTextColor(textColor);
+                    mTvMsg00.setBackgroundColor(holdBgColor);
+                    mTvMsg01.setTextColor(textColor);
+                    mTvMsg01.setBackgroundColor(holdBgColor);
                         break;
                 default://mTvMsg10.setText("-");
-                    mTvMsg00.setTextColor(getResources().getColor(android.R.color.white));
-                    mTvMsg01.setTextColor(getResources().getColor(android.R.color.white));
+                    mTvMsg00.setBackgroundColor(releaseBgColor);
+                    mTvMsg01.setBackgroundColor(releaseBgColor);
                     break;
             }
             switch(deviceInfoL){
@@ -2205,8 +2308,13 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             }
 
             switch(deviceInfoR){
-                case 0x00:mTvMsg01.setText("No device");break;
+                case 0x00:mTvMsg01.setText("No device");
+                    mTvMsg30.setText(strPressL);
+                    mTvMsg31.setText(strPressR);
+                    break;
                 case 0x10:mTvMsg01.setText("PushupBar");
+                    mTvMsg30.setText(strPressL);
+                    mTvMsg31.setText(strPressR);
                     switch(property){
                         case 1:updateDebugInfo("Near");break;
                         case 2:updateDebugInfo("Medium");break;
@@ -2215,6 +2323,8 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     }
                     break;
                 case 0x20:mTvMsg01.setText("JumpRope");
+                    mTvMsg30.setText("StepL:\t"+valPressureL);
+                    mTvMsg31.setText("StepR:\t"+valPressureR);
                     switch(property){
                         case 1:updateDebugInfo("Forward");break;
                         case 2:updateDebugInfo("Reverse");break;
@@ -2223,41 +2333,47 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     }
                     break;
                 case 0x30:mTvMsg01.setText("AbsWheel");
-                    mTvMsg11.setText("StepWheel:");
-                    mTvMsg12.setText(""+stepWheel);
+                    mTvMsg10.setText("StepWheel:"+stepWheel);
+                    mTvMsg30.setText(strPressL);
+                    mTvMsg31.setText(strPressR);
                     switch(property){
-                        case 1:updateDebugInfo("1");break;
-                        case 2:updateDebugInfo("2");break;
-                        case 3:updateDebugInfo("3");break;
-                        default:updateDebugInfo("-");break;
+                        case 1:updateDebugInfo("Push Forward,\t Level 1");break;
+                        case 2:updateDebugInfo("Push Left,\t Level 1");break;
+                        case 3:updateDebugInfo("Push Right,\t Level 1");break;
+                        case 4:updateDebugInfo("Push Forward,\t Level 2");break;
+                        case 5:updateDebugInfo("Push Left,\t Level 2");break;
+                        case 6:updateDebugInfo("Push Right,\t Level 2");break;
+                        case 7:updateDebugInfo("Push Forward,\t Level 3");break;
+                        case 8:updateDebugInfo("Push Left,\t Level 3");break;
+                        case 9:updateDebugInfo("Push Right,\t Level 3");break;
+                        //default:updateDebugInfo("-");break;
                     }
                     break;
                 case 0x40:mTvMsg01.setText("ResistantBand");
+                    mTvMsg30.setText(strPressL);
+                    mTvMsg31.setText(strPressR);
                     switch(property){
-                        case 1:mTvMsg40.setText("shoulder press");break;
-                        case 2:mTvMsg40.setText("shoulder flies 1");break;
-                        case 3:mTvMsg40.setText("shoulder flies 2");break;
-                        case 4:mTvMsg40.setText("overhead tricep ext 1");break;
-                        case 5:mTvMsg40.setText("overhead tricep ext 2");break;
-                        case 6:mTvMsg40.setText("bend over tricep ext");break;
-                        case 7:mTvMsg40.setText("7");break;
-                        case 8:mTvMsg40.setText("waiting cycle");break;
-                        default:mTvMsg40.setText("");break;
+                        case 1:updateDebugInfo("shoulder press");break;
+                        case 2:updateDebugInfo("shoulder flies 1");break;
+                        case 3:updateDebugInfo("shoulder flies 2");break;
+                        case 4:updateDebugInfo("overhead tricep ext 1");break;
+                        case 5:updateDebugInfo("overhead tricep ext 2");break;
+                        case 6:updateDebugInfo("bend over tricep ext");break;
+                        case 7:updateDebugInfo("7");break;
+                        case 8:updateDebugInfo("waiting cycle");break;
+                        //default:updateDebugInfo("");break;
                     }
                     break;
                 default:mTvMsg01.setText("-");break;
             }
-            //mTvInfoDevice.startAnimation(mBlinkAnimation);
+            mTvMsg11.setText(Integer.toString(debugData0));
+            mTvMsg12.setText(Integer.toString(debugData1));
             mTvMsg20.setText("Roll L: " + Integer.toString(rollL));
             mTvMsg21.setText("Roll R: " + Integer.toString((rollR)));
             mTvMsg22.setText("Count: " + Integer.toString((count)));
-            mTvMsg30.setText("pressL: "+Integer.toString(valPressureL));
-            mTvMsg31.setText("pressR: "+Integer.toString(valPressureR));
+            //mTvMsg30.setText("pressL: "+Integer.toString(valPressureL));
+            //mTvMsg31.setText("pressR: "+Integer.toString(valPressureR));
             mTvMsg32.setText("RF Power:"+Integer.toString(rfDistance));
-            //mTvMsg31.setText(Integer.toString(rfDistance));
-            //mTvInfo5.setText("Property:" + Integer.toString((property)));
-            //mTvMsg30.setText("L: " + Integer.toString(valPressureRawL));
-            //mTvMsg31.setText("R: " + Integer.toString(valPressureRawR));
         }
         if(dataType == 2){//device ID
             final StringBuilder stringBuilder = new StringBuilder(data.length);
@@ -2269,27 +2385,27 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         if(dataType == 3){//Firmware ver. and battey info
             final StringBuilder stringBuilder = new StringBuilder(4);
             for (int i=0;i<4;i++)
-                stringBuilder.append(String.format("%02X", data[i+7]));
+                stringBuilder.append(String.format("%02X", data[10-i]));
             mTvMsg50.setText("Firmware ver.: " + stringBuilder.toString());
             mTvMsg50.startAnimation(mBlinkAnimation);
             int voltageR =  (int) ((data[11] & 0xFF) | ((data[12] & 0xFF)<<8));
             int voltageL =  (int) ((data[13] & 0xFF) | ((data[14] & 0xFF)<<8));
-            mTvMsg60.setText("Battery info: Left: " + voltageL + "\t Right: " + voltageR);
+            DecimalFormat format = new DecimalFormat("0.000");
+            String strVolL = "L: " + format.format((float)voltageL/1000);
+            String strVolR = "R: " + format.format((float)voltageR/1000);
+            mTvMsg60.setText("Battery info(v): " + strVolL +" \t"+ strVolR);
             mTvMsg60.startAnimation(mBlinkAnimation);
         }
         if(dataType==0x7){//sensor debug
             if(dataCount==3){
-                if(data[3]==0x00)updateDebugInfo("Sensor Updated");
-                else updateDebugInfo("Sensor Failed");
+                updateDebugInfo(data[3]==0x00?"Sensor Updated":"Sensor Failed");
+                createNoticeDialog(data[3]==0x00?"Sensor Updated":"Sensor Failed");
             }
         }
         if(dataType==0x8){//user info
             if(dataCount==8){
-                if(data[8]==0x00){
-                    updateDebugInfo("UserInfo Updated");
-                }else{
-                    updateDebugInfo("UserInfo Update Failed");
-                }
+                updateDebugInfo(data[8]==0x00?"UserInfo Uploaded":"UserInfo Upload Failed");
+                createNoticeDialog(data[8]==0x00?"UserInfo Uploaded":"UserInfo Upload Failed");
             }else{
                 byte[] userInfo = new byte[8];
                 for(int i = 0;i<userInfo.length;i++){
@@ -2298,9 +2414,19 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                 }
                 int height = (int) ((data[11] & 0xFF) | ((data[12] & 0xFF)<<8));
                 int weight = (int) data[13] & 0xff;
+                int valReserved = (int) data[14] & 0xff;
+                int pushbarInfo = (int) data[15] & 0xff;
+                int abswheelInfo = (int) data[16] & 0xff;
+                int pressMaxL = (int) data[17] & 0xff;
+                int pressMaxR = (int) data[18] & 0xff;
                 //mEtUserInfo1.setText(bytesToString(userInfo, " "));
                 mEtHeight.setText(Integer.toString(height));
                 mEtWeight.setText(Integer.toString(weight));
+                mEtInfoReserved.setText(Integer.toString(valReserved));
+                mEtInfoPushbar.setText(Integer.toString(pushbarInfo));
+                mEtInfoAbsWheel.setText(Integer.toString(abswheelInfo));
+                mEtInfoPressMaxL.setText(Integer.toString(pressMaxL));
+                mEtInfoPressMaxR.setText(Integer.toString(pressMaxR));
                 //mEtUserInfo1.startAnimation(mBlinkAnimation);
             }
         }
@@ -2318,46 +2444,21 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             mEtPairCode.setText(bytesToString(pairCodeFb1," ")+" "+bytesToString(pairCodeFb2," "));
         }
         if(dataType==0x0a) {//pairing code return
-            if(data[8]==0x00)updateDebugInfo("Pairing Done");
-            else updateDebugInfo("Pairing Failed");
+            updateDebugInfo(data[8]==0x00?"Pairing Done":"Pairing Failed");
+            createNoticeDialog(data[8]==0x00?"Pairing Done":"Pairing Failed");
         }
         if(dataType==0x0b){//sensor set Zero
-            //if(data[3]==0x00)updateDebugInfo("SetZero Done");
-            //else updateDebugInfo("SetZero Failed");
-            String sResult = (data[4]==0)?"Done":"Failed";
+            mProgressDialog.dismiss();
+            String sResult = (data[8]==0)?"Done":"Failed";
             String sSensorSetType = "";
-            switch(data[3]){
-                case 0x10:
-                    sSensorSetType = "PushupBar Pressure Zero";
-                    break;
-                case 0x11:
-                    sSensorSetType = "PushupBar Pressure Max";
-                    break;
+            switch(data[7]&0xf0){
                 case 0x30:
-                    sSensorSetType = "AbsWheel Pressure Zero";
-                    break;
-                case 0x31:
-                    sSensorSetType = "AbsWheel Pressure Max";
-                    break;
-                case 0x40:
-                    sSensorSetType = "ResBand Pressure Zero";
-                    break;
-                case 0x41:
-                    sSensorSetType = "ResBand Pressure Max";
-                    break;
-                case 0x42:
-                    sSensorSetType = "ResBand Pressure Max 2";
-                    break;
-                case 0x50:
-                    sSensorSetType = "G-sensor Zero";
-                    stopAvgSamplingGSensor();
-                    break;
-                case 0x60:
-                    sSensorSetType = "Gyro-sensor Zero";
-                    stopAvgSamplingGSensor();
+                    sSensorSetType = "G Sensor ";
                     break;
             }
-            mTvInfoDebug.setText("Set " + sSensorSetType +" " + sResult);
+            String result = sSensorSetType + "Initialize " + sResult;
+            mTvInfoDebug.setText(result);
+            createNoticeDialog(result);
         }
         if(dataType==0x06){
             switch(data[3]){
@@ -2385,44 +2486,58 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             //clearInfoDisplay();
             switch (data[3]){
                 case 0x01:
-                    valAxL = ((data[4] & 0xFF) | ((data[5])<<8));
-                    valAyL = ((data[6] & 0xFF) | ((data[7])<<8));
-                    valAzL = ((data[8] & 0xFF) | ((data[9])<<8));
-                    valGxL = ((data[10] & 0xFF) | ((data[11])<<8));
-                    valGyL = ((data[12] & 0xFF) | ((data[13])<<8));
-                    valGzL = ((data[14] & 0xFF) | ((data[15])<<8));
-                    appendDataArray(axDataL,valAxL);
-                    appendDataArray(ayDataL,valAyL);
-                    appendDataArray(azDataL,valAzL);
-                    appendDataArray(gxDataL,valGxL);
-                    appendDataArray(gyDataL,valGyL);
-                    appendDataArray(gzDataL,valGzL);
-                    mTvMsgCh1.setText(""+valAxL);
-                    mTvMsgCh2.setText(""+valAyL);
-                    mTvMsgCh3.setText(""+valAzL);
-                    mTvMsgCh4.setText(""+valGxL);
-                    mTvMsgCh5.setText(""+valGyL);
-                    mTvMsgCh6.setText(""+valGzL);
+                    for(int i = 0;i<valGensorL.length;i++){
+                        valGensorL[i] = ((data[4+i*2] & 0xFF) | ((data[5+i*2])<<8));
+                        appendDataArray(gDataArrayL[i],valGensorL[i]);
+                    }
+
+                    mTvMsgCh1.setText(""+valGensorL[0]);
+                    mTvMsgCh2.setText(""+valGensorL[1]);
+                    mTvMsgCh3.setText(""+valGensorL[2]);
+                    mTvMsgCh4.setText(""+valGensorL[3]);
+                    mTvMsgCh5.setText(""+valGensorL[4]);
+                    mTvMsgCh6.setText(""+valGensorL[5]);
+                    if(isCheckGSensorSteady){
+                        if(!checkIfGSensorLSteady()){
+                            stopAvgSamplingGSensor();
+                            stopCheckIfGSensorSteady();
+                            createNoticeDialog("Please keep the handle steady and try again");
+                            updateDebugInfo("Please keep the Handle Steady");
+                        }else{
+                            if(checkSensorLCnt>WAVEFORM_DATA_LENGTH){
+                                stopAvgSamplingGSensor();
+                                stopCheckIfGSensorSteady();
+                                mProgressDialog.dismiss();
+                                sendGSensorInitCommand();
+                            }
+                        }
+                    }
                     break;
                 case 0x02:
-                    valAxR = ((data[4] & 0xFF) | ((data[5])<<8));
-                    valAyR = ((data[6] & 0xFF) | ((data[7])<<8));
-                    valAzR = ((data[8] & 0xFF) | ((data[9])<<8));
-                    valGxR = ((data[10] & 0xFF) | ((data[11])<<8));
-                    valGyR = ((data[12] & 0xFF) | ((data[13])<<8));
-                    valGzR = ((data[14] & 0xFF) | ((data[15])<<8));
-                    appendDataArray(axDataR, valAxR);
-                    appendDataArray(ayDataR, valAyR);
-                    appendDataArray(azDataR, valAzR);
-                    appendDataArray(gxDataR, valGxR);
-                    appendDataArray(gyDataR, valGyR);
-                    appendDataArray(gzDataR, valGzR);
-                    mTvMsgCh1.setText(""+valAxR);
-                    mTvMsgCh2.setText(""+valAyR);
-                    mTvMsgCh3.setText(""+valAzR);
-                    mTvMsgCh4.setText(""+valGxR);
-                    mTvMsgCh5.setText(""+valGyR);
-                    mTvMsgCh6.setText(""+valGzR);
+                    for(int i = 0;i<valGensorR.length;i++){
+                        valGensorR[i] = ((data[4+i*2] & 0xFF) | ((data[5+i*2])<<8));
+                        appendDataArray(gDataArrayR[i],valGensorR[i]);
+                    }
+                    mTvMsgCh1.setText(""+valGensorR[0]);
+                    mTvMsgCh2.setText(""+valGensorR[1]);
+                    mTvMsgCh3.setText(""+valGensorR[2]);
+                    mTvMsgCh4.setText(""+valGensorR[3]);
+                    mTvMsgCh5.setText(""+valGensorR[4]);
+                    mTvMsgCh6.setText(""+valGensorR[5]);
+                    if(isCheckGSensorSteady){
+                        if(!checkIfGSensorRSteady()){
+                            stopAvgSamplingGSensor();
+                            stopCheckIfGSensorSteady();
+                            updateDebugInfo("Please keep the Handles Steady");
+                        }else{
+                            if(checkSensorRCnt>WAVEFORM_DATA_LENGTH){
+                                stopAvgSamplingGSensor();
+                                stopCheckIfGSensorSteady();
+                                mProgressDialog.dismiss();
+                                sendGSensorInitCommand();
+                            }
+                        }
+                    }
                     break;
                 case 0x03:
                     valYawL = ((data[4] & 0xFF) | ((data[5])<<8));
@@ -2450,10 +2565,10 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     playWaveform6Ch(yawDataL,pitchDataL,rollDataL,yawDataR,pitchDataR,rollDataR);
                     break;
                 case SCOPE_SEL_6AXIS_RIGHT:
-                    playWaveform6Ch(axDataR, ayDataR, azDataR, gxDataR, gyDataR, gzDataR);
+                    playWaveform6Ch(gDataArrayR[0], gDataArrayR[1], gDataArrayR[2], gDataArrayR[3], gDataArrayR[4], gDataArrayR[5]);
                     break;
                 case SCOPE_SEL_6AXIS_LEFT:
-                    playWaveform6Ch(axDataL, ayDataL, azDataL, gxDataL, gyDataL, gzDataL);
+                    playWaveform6Ch(gDataArrayL[0], gDataArrayL[1], gDataArrayL[2], gDataArrayL[3], gDataArrayL[4], gDataArrayL[5]);
                     break;
             }
         }
@@ -2464,6 +2579,12 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             updateDebugInfo("!!!ERROR!!!");
         }
         return true;
+    }
+
+    private void sendGSensorInitCommand(){
+        createProgressDialog("Wait Handles Feedback");
+        appCmd.txCmdB_3[7] = 0x33;
+        sendBleData(appCmd.txCmdB_3);
     }
 
 

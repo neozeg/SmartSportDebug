@@ -20,16 +20,8 @@
                 <Button
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="PushupBar Set Zero"
-                    android:id="@+id/buttonPBSet0"
-                    android:layout_margin="2dp"
-                    android:layout_weight="1" />
-
-                <Button
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="PushupBar Set Max"
-                    android:id="@+id/buttonPBSetM"
+                    android:text="Pressure Reset"
+                    android:id="@+id/buttonPressReset"
                     android:layout_margin="2dp"
                     android:layout_weight="1" />
 
@@ -42,47 +34,16 @@
                 <Button
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="AbsWheel Set Zero"
-                    android:id="@+id/buttonAbsSet0"
+                    android:text="Pressure Calibration"
+                    android:id="@+id/buttonPressCal"
                     android:layout_margin="2dp"
                     android:layout_weight="1" />
-
-                <Button
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="AbsWheel Set Max"
-                    android:layout_margin="2dp"
-                    android:id="@+id/buttonAbsSetM"
-                    android:layout_weight="1"  />
 
             </TableRow>
 
             <TableRow
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
-
-                <Button
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="ResBand Set Zero"
-                    android:id="@+id/buttonResSet0"
-                    android:layout_margin="2dp"
-                    android:layout_weight="1" />
-
-                <Button
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="ResBand Set M1"
-                    android:id="@+id/buttonResSet1"
-                    android:layout_margin="2dp"
-                    android:layout_weight="1" />
-                <Button
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="ResBand Set M2"
-                    android:id="@+id/buttonResSet2"
-                    android:layout_margin="2dp"
-                    android:layout_weight="1" />
 
             </TableRow>
             <TableRow
@@ -92,15 +53,7 @@
                 <Button
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="G-Sensor Reset"
-                    android:id="@+id/buttonGsReset"
-                    android:layout_margin="2dp"
-                    android:layout_weight="1" />
-
-                <Button
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Gyro Reset"
+                    android:text="G Sensor Reset"
                     android:id="@+id/buttonGyroReset"
                     android:layout_margin="2dp"
                     android:layout_weight="1" />
