@@ -35,9 +35,11 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.ScrollView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -59,8 +61,10 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private final static int UPLOAD_INTERVAL = 5;
     private final static int UPLOAD_TIMEOUT = 2000;
 
-    private final static int AVG_SAMPLE_DURATION = 1000;
+    private final static int AVG_SAMPLE_DURATION = 3000;
     private final static int AVG_SAMPLE_INTERVAL = 20;
+    private final static int AVG_SAMPLE_INTERVAL2 = 100;
+    private final static int AVG_SAMPLE_LENGTH = 10;
 
     private final static int OPEN_FILE_DIALOG_ID = 1;
     private final static int REQUEST_CONNECT_DEVICE = 1;
@@ -69,15 +73,17 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private final static int STATE_CONNECTED = BluetoothProfile.STATE_CONNECTED;
 
 
-    private final static int SENSOR_SET_ZERO_PUSHBAR_SET_ZERO = 0x10;
-    private final static int SENSOR_SET_ZERO_PUSHBAR_SET_MAX = 0x11;
-    private final static int SENSOR_SET_ZERO_ABSWHEEL_SET_ZERO = 0x30;
-    private final static int SENSOR_SET_ZERO_ABSWHEEL_SET_MAX = 0x31;
-    private final static int SENSOR_SET_ZERO_RESBAND_SET_0 = 0x40;
-    private final static int SENSOR_SET_ZERO_RESBAND_SET_1 = 0x41;
-    private final static int SENSOR_SET_ZERO_RESBAND_SET_2 = 0x42;
+    //private final static int SENSOR_SET_ZERO_PUSHBAR_SET_ZERO = 0x10;
+    //private final static int SENSOR_SET_ZERO_PUSHBAR_SET_MAX = 0x11;
+    //private final static int SENSOR_SET_ZERO_ABSWHEEL_SET_ZERO = 0x30;
+    //private final static int SENSOR_SET_ZERO_ABSWHEEL_SET_MAX = 0x31;
+    //private final static int SENSOR_SET_ZERO_RESBAND_SET_0 = 0x40;
+    //private final static int SENSOR_SET_ZERO_RESBAND_SET_1 = 0x41;
+    //private final static int SENSOR_SET_ZERO_RESBAND_SET_2 = 0x42;
+    private final static int SENSOR_PRESSURE_RESET = 0x10;
+    private final static int SENSOR_PRESSURE_CALIBRATION = 0x20;
     private final static int SENSOR_SET_ZERO_GSENSOR = 0x50;
-    private final static int SENSOR_SET_ZERO_GYROSENSOR = 0x60;
+    //private final static int SENSOR_SET_ZERO_GYROSENSOR = 0x60;
 
     private final static int PACKET_AVAL_DATA_LENGTH = 16;
 
@@ -99,7 +105,10 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private TextView mTvMsgCh1,mTvMsgCh2,mTvMsgCh3,mTvMsgCh4,mTvMsgCh5,mTvMsgCh6;
     private TextView mTvTxMessage,mTvRxMessage,mTvVersion,mTvDeviceName;
     private Button mBtnDevice;
-    private Button mBtnCmd1,mBtnCmd2,mBtnCmd3,mBtnCmd4,mBtnCmd5,mBtnCmd6,mBtnCmd7,mBtnCmd8;
+    //private Button mBtnCmd1,mBtnCmd2,mBtnCmd3,mBtnCmd4,mBtnCmd5,mBtnCmd6,mBtnCmd7,mBtnCmd8;
+    private Switch mSwRpt,mSwRpt6xL,mSwRpt6xR,mSwRptAttitude,mSwRptPress;
+    private Button mBtnRptFw,mBtnRptDeviceId,mBtnCmdSleep;
+    private EditText mEtRefVal;
     private Button mBtnPressReset,mBtnPressCalibrate,mBtnGyroReset;
     private Button mBtnResBP1R,mBtnResBP2R,mBtnResBP3R,mBtnResBP4R,mBtnResBP1L,mBtnResBP2L,mBtnResBP3L,mBtnResBP4L;
     private Button mBtnOTAEnterR,mBtnOTABlankR,mBtnOTAEraseR,mBtnOTAProgramR,mBtnOTAVerifyR,mBtnOTAExitR;
@@ -118,7 +127,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private Button mBtnBleTxPowerSubmit;
     private RadioButton mRBTx0,mRBTx1,mRBTx2,mRBTx3;
 
-    private TextView mTvMsgExt00,mTvMsgExt01,mTvMsgExt10,mTvMsgExt11;
+    private TextView mTvMsgExt00,mTvMsgExt01,mTvMsgExt10,mTvMsgExt11,mTvMsgExt20,mTvMsgExt21,mTvMsgExt30,mTvMsgExt31;
 
     //private ViewFlipper mViewFlipperBottom;
     private ViewPager viewPagerBottom;
@@ -145,6 +154,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private final static int REPORT_TYPE_6AXILSENSOR_LEFT = 2;
     private final static int REPORT_TYPE_6AXILSENSOR_RIGHT = 1;
     private final static int REPORT_TYPE_ATTITUDE = 3;
+    private final static int REPORT_TYPE_PRESSURE = 4;
     private final static int REPORT_TYPE_DEVICE_ID = 10;
     private final static int REPORT_TYPE_FIRMWARE = 11;
     private final static int REPORT_TYPE_FIRST_MSG = 12;
@@ -176,8 +186,12 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private final static int SCOPE_SEL_GYRO_LEFT = 6;
     private final static int SCOPE_SEL_GYRO_RIGHT = 7;
     private int mScopeSel=0;
-    private short[] pressureDataL = new short[WAVEFORM_DATA_LENGTH];
-    private short[] pressureDataR = new short[WAVEFORM_DATA_LENGTH];
+    private short[] pressureZeroDataL = new short[WAVEFORM_DATA_LENGTH];
+    private short[] pressureZeroDataR = new short[WAVEFORM_DATA_LENGTH];
+    private short[] pressureRawDataL = new short[WAVEFORM_DATA_LENGTH];
+    private short[] pressureRawDataR = new short[WAVEFORM_DATA_LENGTH];
+    private short[] pressureCalDataL = new short[WAVEFORM_DATA_LENGTH];
+    private short[] pressureCalDataR = new short[WAVEFORM_DATA_LENGTH];
     private short[] yawDataL = new short[WAVEFORM_DATA_LENGTH];
     private short[] yawDataR = new short[WAVEFORM_DATA_LENGTH];
     private short[] pitchDataL = new short[WAVEFORM_DATA_LENGTH];
@@ -418,6 +432,13 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             mDeviceName = bleApp.manager.bleDevice.getName();
             mDeviceNewName = DeviceRename.getNewName(mDeviceAddress);
             mTvDeviceName.setText(mDeviceName);
+            mEtNewBleName.setText(mDeviceNewName);
+            if(mEtUserId!=null)
+            if(mEtUserId[0]!=null){
+                for(int i=0;i<6;i++){
+                    mEtUserId[i].setText(mDeviceNewName.substring(i*2+3,i*2+5));
+                }
+            }
             saveConnectConfig();
 
 
@@ -569,19 +590,23 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         switch (reportType){
             case REPORT_TYPE_NORMALMESSAGE:
                 sendReportCmd();
-                mBtnCmd1.setTextColor(Color.RED);
+                //mBtnCmd1.setTextColor(Color.RED);
                 break;
             case REPORT_TYPE_6AXILSENSOR_RIGHT:
                 sendBleData(appCmd.txCmdF_2);
-                mBtnCmd4.setTextColor(Color.RED);
+                //mBtnCmd4.setTextColor(Color.RED);
                 break;
             case REPORT_TYPE_6AXILSENSOR_LEFT:
                 sendBleData(appCmd.txCmdF_1);
-                mBtnCmd5.setTextColor(Color.RED);
+                //mBtnCmd5.setTextColor(Color.RED);
                 break;
             case REPORT_TYPE_ATTITUDE:
                 sendBleData(appCmd.txCmdF_3);
-                mBtnCmd6.setTextColor(Color.RED);
+                //mBtnCmd6.setTextColor(Color.RED);
+                break;
+            case REPORT_TYPE_PRESSURE:
+                sendBleData(appCmd.txCmd10);
+                //mBtnCmd6.setTextColor(Color.RED);
                 break;
         }
         ReportCmdTimer.postDelayed(ReportCmdRunnable, SENDCODE_INTERVAL);
@@ -590,10 +615,15 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         //if(buttonReportCnt!=0)sendBleData(appCmd.txCmd1_2);
         buttonReportCnt=0;
         ReportCmdTimer.removeCallbacks(ReportCmdRunnable);
-        if(mBtnCmd1!=null)mBtnCmd1.setTextColor(Color.WHITE);
-        if(mBtnCmd4!=null)mBtnCmd4.setTextColor(Color.WHITE);
-        if(mBtnCmd5!=null)mBtnCmd5.setTextColor(Color.WHITE);
-        if(mBtnCmd6!=null)mBtnCmd6.setTextColor(Color.WHITE);
+        if(mSwRpt!=null)mSwRpt.setChecked(false);
+        if(mSwRpt6xL!=null)mSwRpt6xL.setChecked(false);
+        if(mSwRpt6xR!=null)mSwRpt6xR.setChecked(false);
+        if(mSwRptAttitude!=null)mSwRptAttitude.setChecked(false);
+        if(mSwRptPress!=null)mSwRptPress.setChecked(false);
+        //if(mBtnCmd1!=null)mBtnCmd1.setTextColor(Color.WHITE);
+        //if(mBtnCmd4!=null)mBtnCmd4.setTextColor(Color.WHITE);
+        //if(mBtnCmd5!=null)mBtnCmd5.setTextColor(Color.WHITE);
+        //if(mBtnCmd6!=null)mBtnCmd6.setTextColor(Color.WHITE);
     }
 
     private final static int MSG_PROGRESS_CHANGE = 1;
@@ -603,6 +633,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private final static int MSG_SENSOR_SET_ZERO = 5;
     private final static int MSG_SHOW_WAITING_FEEDBACK_DIALOG = 6;
     private final static int MSG_SHOW_NOTICE_DIALOG = 7;
+    private final static int MSG_SHOW_CONFIRM_WRITE_DIALOG = 8;
     private final static String  EXTRA_DIALOG_TITLE = "extra.dialog.title";
 
     private final static String MSG_BLE_BUFFER = "message_ble_buffer";
@@ -670,119 +701,28 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     AlertDialog dialog = builder.create();
                     dialog.show();
                     break;
+                case MSG_SHOW_CONFIRM_WRITE_DIALOG:
+                    mConfirmWriteDialog.show();
+                    break;
             }
         }
 
     };
     private static int AVG_DIFF_TH = 50;
-    private int[] AvgSample1,AvgSample2;
-    private int AvgResult1,AvgResult2;
     private int samplePointer;
-    private int setZeroType;
-    private boolean sampleSendLeft = true;
+    private int setZeroType = 0;
     private void startAvgSampling(){
-        AvgSample1 = new int[AVG_SAMPLE_DURATION/AVG_SAMPLE_INTERVAL];
-        AvgSample2 = new int[AVG_SAMPLE_DURATION/AVG_SAMPLE_INTERVAL];
         samplePointer=0;
         avgSamplingTimer.postDelayed(avgSamplingRunnable,AVG_SAMPLE_INTERVAL);
         updateDebugInfo("Start Average Sampling");
     }
     private void stopAvgSamplingGSensor(){
+        setZeroType = 0;
         avgSamplingTimer.removeCallbacks(avgSamplingRunnable);
     }
-    private void stopAvgSampling(){
+    private void stopAvgSamplingPSensor(){
+        setZeroType = 0;
         avgSamplingTimer.removeCallbacks(avgSamplingRunnable);
-        long sum1 = 0;
-        long sum2 = 0;
-        for(int i=0;i<samplePointer;i++){
-            sum1+=AvgSample1[i];
-            sum2+=AvgSample2[i];
-        }
-        if(samplePointer!=0){
-            AvgResult1 = (int)sum1/samplePointer;
-            AvgResult2 = (int)sum2/samplePointer;
-        }else{
-            AvgResult1=0;
-            AvgResult2=0;
-        }
-        byte[] temp,temp2;
-        switch(setZeroType){
-            case SENSOR_SET_ZERO_PUSHBAR_SET_ZERO:
-                temp = intToBytes(AvgResult2);
-                appCmd.txCmdB_10[4] = temp[0];
-                appCmd.txCmdB_10[5] = temp[1];
-                dataBytes = new byte[appCmd.txCmdB_10.length];
-                afterConfirmWriteStep = CONFIRM_SENSOR_RESET;
-                System.arraycopy(appCmd.txCmdB_10, 0, dataBytes, 0, appCmd.txCmdB_10.length);
-                afterConfirmWriteStep = 0;
-                mConfirmWriteDialog.show();
-                break;
-            case SENSOR_SET_ZERO_PUSHBAR_SET_MAX:
-                temp = intToBytes(AvgResult2);
-                appCmd.txCmdB_11[4] = temp[0];
-                appCmd.txCmdB_11[5] = temp[1];
-                dataBytes = new byte[appCmd.txCmdB_11.length];
-                afterConfirmWriteStep = CONFIRM_SENSOR_RESET;
-                System.arraycopy(appCmd.txCmdB_11,0,dataBytes,0,appCmd.txCmdB_11.length);
-                afterConfirmWriteStep = 0;
-                mConfirmWriteDialog.show();
-                break;
-            case SENSOR_SET_ZERO_ABSWHEEL_SET_ZERO:
-                temp = intToBytes(AvgResult2);
-                appCmd.txCmdB_30[4] = temp[0];
-                appCmd.txCmdB_30[5] = temp[1];
-                dataBytes = new byte[appCmd.txCmdB_30.length];
-                System.arraycopy(appCmd.txCmdB_30,0,dataBytes,0,appCmd.txCmdB_30.length);
-                afterConfirmWriteStep = CONFIRM_SENSOR_RESET;
-                mConfirmWriteDialog.show();
-                break;
-            case SENSOR_SET_ZERO_ABSWHEEL_SET_MAX:
-                temp = intToBytes(AvgResult2);
-                appCmd.txCmdB_31[4] = temp[0];
-                appCmd.txCmdB_31[5] = temp[1];
-                dataBytes = new byte[appCmd.txCmdB_31.length];
-                System.arraycopy(appCmd.txCmdB_31,0,dataBytes,0,appCmd.txCmdB_31.length);
-                afterConfirmWriteStep = CONFIRM_SENSOR_RESET;
-                mConfirmWriteDialog.show();
-                break;
-            case SENSOR_SET_ZERO_RESBAND_SET_0:
-                temp = intToBytes(AvgResult1);
-                appCmd.txCmdB_40[4] = temp[0];
-                appCmd.txCmdB_40[5] = temp[1];
-                temp2 = intToBytes(AvgResult2);
-                appCmd.txCmdB_40[6] = temp2[0];
-                appCmd.txCmdB_40[7] = temp2[1];
-                dataBytes = new byte[appCmd.txCmdB_40.length];
-                System.arraycopy(appCmd.txCmdB_40,0,dataBytes,0,appCmd.txCmdB_40.length);
-                afterConfirmWriteStep = CONFIRM_SENSOR_RESET;
-                mConfirmWriteDialog.show();
-                break;
-            case SENSOR_SET_ZERO_RESBAND_SET_1:
-                temp = intToBytes(AvgResult1);
-                appCmd.txCmdB_41[4] = temp[0];
-                appCmd.txCmdB_41[5] = temp[1];
-                temp2 = intToBytes(AvgResult2);
-                appCmd.txCmdB_41[6] = temp2[0];
-                appCmd.txCmdB_41[7] = temp2[1];
-                dataBytes = new byte[appCmd.txCmdB_41.length];
-                System.arraycopy(appCmd.txCmdB_41,0,dataBytes,0,appCmd.txCmdB_41.length);
-                afterConfirmWriteStep = CONFIRM_SENSOR_RESET;
-                mConfirmWriteDialog.show();
-                break;
-            case SENSOR_SET_ZERO_RESBAND_SET_2:
-                temp = intToBytes(AvgResult1);
-                appCmd.txCmdB_42[4] = temp[0];
-                appCmd.txCmdB_42[5] = temp[1];
-                temp2 = intToBytes(AvgResult2);
-                appCmd.txCmdB_42[6] = temp2[0];
-                appCmd.txCmdB_42[7] = temp2[1];
-                dataBytes = new byte[appCmd.txCmdB_42.length];
-                System.arraycopy(appCmd.txCmdB_42,0,dataBytes,0,appCmd.txCmdB_42.length);
-                afterConfirmWriteStep = CONFIRM_SENSOR_RESET;
-                mConfirmWriteDialog.show();
-                break;
-        }
-        updateDebugInfo("Average Result are: " + AvgResult1 + " and " + AvgResult2);
     }
     private Handler avgSamplingTimer = new Handler();
     private Runnable avgSamplingRunnable = new Runnable() {
@@ -790,21 +730,23 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         public void run() {
 
             switch(setZeroType) {
-                case SENSOR_SET_ZERO_PUSHBAR_SET_ZERO:
-                case SENSOR_SET_ZERO_PUSHBAR_SET_MAX:
-                case SENSOR_SET_ZERO_ABSWHEEL_SET_ZERO:
-                case SENSOR_SET_ZERO_ABSWHEEL_SET_MAX:
-                case SENSOR_SET_ZERO_RESBAND_SET_0:
-                case SENSOR_SET_ZERO_RESBAND_SET_1:
-                case SENSOR_SET_ZERO_RESBAND_SET_2:
-                    if (samplePointer < AvgSample1.length) {
-                        sendReportCmd();
-                        samplePointer++;
-                        avgSamplingTimer.postDelayed(this, AVG_SAMPLE_INTERVAL);
-                        int progress = samplePointer * 100 / AvgSample1.length;
-                        updateDebugInfo("Sampling " + progress + " /100");
-                    } else {
-                        stopAvgSampling();
+                case SENSOR_PRESSURE_RESET:
+                    if(samplePointer < AVG_SAMPLE_DURATION/AVG_SAMPLE_INTERVAL2){
+                        sendBleData(appCmd.txCmd10);
+                        avgSamplingTimer.postDelayed(this, AVG_SAMPLE_INTERVAL2);
+                    }else{
+                        mProgressDialog.dismiss();
+                        stopAvgSamplingPSensor();
+                    }
+                    break;
+
+                case SENSOR_PRESSURE_CALIBRATION:
+                    if(samplePointer < AVG_SAMPLE_DURATION/AVG_SAMPLE_INTERVAL2){
+                        sendBleData(appCmd.txCmd10);
+                        avgSamplingTimer.postDelayed(this, AVG_SAMPLE_INTERVAL2);
+                    }else{
+                        mProgressDialog.dismiss();
+                        stopAvgSamplingPSensor();
                     }
                     break;
                 case SENSOR_SET_ZERO_GSENSOR:
@@ -848,6 +790,11 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                 case REPORT_TYPE_ATTITUDE:
                     buttonReportCnt = 2;
                     sendBleData(appCmd.txCmdF_3);
+                    ReportCmdTimer.postDelayed(this,SENDCODE_INTERVAL);
+                    break;
+                case REPORT_TYPE_PRESSURE:
+                    buttonReportCnt = 2;
+                    sendBleData(appCmd.txCmd10);
                     ReportCmdTimer.postDelayed(this,SENDCODE_INTERVAL);
                     break;
                 case REPORT_TYPE_DEVICE_ID:
@@ -944,14 +891,17 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private void setupBottomPagesViewComponents(int page){
         switch(page){
             case 0:
-                setupPage1ViewComponents();
+                setupPageBleRenameViewComponents();
                 break;
             case 1:
-                setupPageSensorResetViewComponents();
+                setupPage1ViewComponents();
                 break;
             case 2:
-                setupPageResBandViewComponents();
+                setupPageSensorResetViewComponents();
                 break;
+            //case 2:
+            //    setupPageResBandViewComponents();
+            //    break;
             case 3:
                 setupPageUserInfoViewComponents();
                 break;
@@ -960,9 +910,6 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                 break;
             case 5:
                 setupPageOTAViewComponents();
-                break;
-            case 6:
-                setupPageBleRenameViewComponents();
                 break;
 
         }
@@ -1023,7 +970,21 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         mTvCh4.setOnClickListener(mOCLPageScope);
         mTvCh5.setOnClickListener(mOCLPageScope);
         mTvCh6.setOnClickListener(mOCLPageScope);
+        mTvMsgCh1.setOnClickListener(mOCLPageScope);
+        mTvMsgCh2.setOnClickListener(mOCLPageScope);
+        mTvMsgCh3.setOnClickListener(mOCLPageScope);
+        mTvMsgCh4.setOnClickListener(mOCLPageScope);
+        mTvMsgCh5.setOnClickListener(mOCLPageScope);
+        mTvMsgCh6.setOnClickListener(mOCLPageScope);
         /**/
+        mTvMsgExt00 = (TextView)findViewById(R.id.tvMsgExt00);
+        mTvMsgExt01 = (TextView)findViewById(R.id.tvMsgExt01);
+        mTvMsgExt10 = (TextView)findViewById(R.id.tvMsgExt10);
+        mTvMsgExt11 = (TextView)findViewById(R.id.tvMsgExt11);
+        mTvMsgExt20 = (TextView)findViewById(R.id.tvMsgExt20);
+        mTvMsgExt21 = (TextView)findViewById(R.id.tvMsgExt21);
+        mTvMsgExt30 = (TextView)findViewById(R.id.tvMsgExt30);
+        mTvMsgExt31 = (TextView)findViewById(R.id.tvMsgExt31);
     }
     private void switchToDebugMsgExt(){
         viewPagerTop.setCurrentItem(1,true);
@@ -1066,32 +1027,28 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         clearInfoDisplay();
     }
     private void setupPageMessageExtViewComponents(){
-        mTvMsgExt00 = (TextView)findViewById(R.id.tvMsgExt00);
-        mTvMsgExt01 = (TextView)findViewById(R.id.tvMsgExt01);
-        mTvMsgExt10 = (TextView)findViewById(R.id.tvMsgExt10);
-        mTvMsgExt11 = (TextView)findViewById(R.id.tvMsgExt11);
     }
     private void setupPage1ViewComponents(){
-        mBtnCmd1 = (Button) findViewById(R.id.buttonCmd1);
-        mBtnCmd2 = (Button) findViewById(R.id.buttonCmd2);
-        mBtnCmd3 = (Button) findViewById(R.id.buttonCmd3);
-        mBtnCmd4 = (Button) findViewById(R.id.buttonCmd4);
-        mBtnCmd5 = (Button) findViewById(R.id.buttonCmd5);
-        mBtnCmd6 = (Button) findViewById(R.id.buttonCmd6);
-        mBtnCmd7 = (Button) findViewById(R.id.buttonCmd7);
-        mBtnCmd8 = (Button) findViewById(R.id.buttonCmd8);
-        mBtnCmd1.setOnClickListener(mOCLPage1);
-        mBtnCmd2.setOnClickListener(mOCLPage1);
-        mBtnCmd3.setOnClickListener(mOCLPage1);
-        mBtnCmd4.setOnClickListener(mOCLPage1);
-        mBtnCmd5.setOnClickListener(mOCLPage1);
-        mBtnCmd6.setOnClickListener(mOCLPage1);
-        mBtnCmd7.setOnClickListener(mOCLPage1);
-        mBtnCmd8.setOnClickListener(mOCLPage1);
-
+        mSwRpt = (Switch)findViewById(R.id.switchReport);
+        mSwRpt6xL = (Switch)findViewById(R.id.switchRpt6axisL);
+        mSwRpt6xR = (Switch)findViewById(R.id.switchRpt6axisR);
+        mSwRptAttitude = (Switch)findViewById(R.id.switchRptAttitude);
+        mSwRptPress = (Switch)findViewById(R.id.switchRptPress);
+        mBtnRptFw = (Button) findViewById(R.id.buttonRptFw);
+        mBtnRptDeviceId = (Button) findViewById(R.id.buttonRpdId);
+        mBtnCmdSleep = (Button) findViewById(R.id.buttonCmdSleep);
+        mSwRpt.setOnCheckedChangeListener(mOCCLPage1);
+        mSwRpt6xL.setOnCheckedChangeListener(mOCCLPage1);
+        mSwRpt6xR.setOnCheckedChangeListener(mOCCLPage1);
+        mSwRptAttitude.setOnCheckedChangeListener(mOCCLPage1);
+        mSwRptPress.setOnCheckedChangeListener(mOCCLPage1);
+        mBtnRptFw.setOnClickListener(mOCLPage1);
+        mBtnRptDeviceId.setOnClickListener(mOCLPage1);
+        mBtnCmdSleep.setOnClickListener(mOCLPage1);
     }
     private void setupPageSensorResetViewComponents() {
         //mBtnPBSet0,mBtnPBSetM,mBtnAWSet0,mBtnAWSetM,mBtnRBSet0,mBtnRBSet1,mBtnRBSet2
+        mEtRefVal = (EditText) findViewById(R.id.editTextRefVal);
         mBtnPressReset = (Button) findViewById(R.id.buttonPressReset);
         mBtnPressCalibrate = (Button) findViewById(R.id.buttonPressCal);
         mBtnGyroReset = (Button) findViewById(R.id.buttonGyroReset);
@@ -1168,6 +1125,13 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                 }
             });
         }
+
+        if(mDeviceNewName!=null)
+            if(mDeviceNewName.length()>6){
+                for(int i=0;i<6;i++){
+                    mEtUserId[i].setText(mDeviceNewName.substring(i*2+3,i*2+5));
+                }
+            }
         //mEtUserInfo1.setText(bytesToString(hexStrToBytes(mEtUserInfo1.getText().toString())," "));
         /*
         mEtUserInfo1.addTextChangedListener(new TextWatcher() {
@@ -1240,8 +1204,11 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         mEtNewBleName = (EditText) findViewById(R.id.editTextNewBLEName);
         mEtOldBleName.setEnabled(false);
         mEtNewBleName.setEnabled(false);
-        if (mDeviceNewName.length() > 0 && mDeviceNewName != null) {
-            mEtNewBleName.setText(mDeviceNewName);
+        if (mDeviceNewName != null) {
+            if(mDeviceNewName.length()>0)
+                mEtNewBleName.setText(mDeviceNewName);
+        }else{
+            mEtNewBleName.setText("");
         }
         mEtOldBleName.setText(mDeviceName);
 
@@ -1283,6 +1250,18 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                 mWaveformView1.setWaveEnable(4,!mWaveformView1.isWaveEnabled(4));
             }else if(v.getId() == mTvCh6.getId()){
                 mWaveformView1.setWaveEnable(5,!mWaveformView1.isWaveEnabled(5));
+            }else if(v.getId() == mTvMsgCh1.getId()){
+                mWaveformView1.setWaveEnable(0, !mWaveformView1.isWaveEnabled(0));
+            }else if(v.getId() == mTvMsgCh2.getId()){
+                mWaveformView1.setWaveEnable(1, !mWaveformView1.isWaveEnabled(1));
+            }else if(v.getId() == mTvMsgCh3.getId()){
+                mWaveformView1.setWaveEnable(2,!mWaveformView1.isWaveEnabled(2));
+            }else if(v.getId() == mTvMsgCh4.getId()){
+                mWaveformView1.setWaveEnable(3,!mWaveformView1.isWaveEnabled(3));
+            }else if(v.getId() == mTvMsgCh5.getId()){
+                mWaveformView1.setWaveEnable(4,!mWaveformView1.isWaveEnabled(4));
+            }else if(v.getId() == mTvMsgCh6.getId()){
+                mWaveformView1.setWaveEnable(5,!mWaveformView1.isWaveEnabled(5));
             }
         }
     };
@@ -1296,7 +1275,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         mTvCh6.setText("");
         mWaveformView1.clearDataRange();
         setWaveEnable(2,true);
-        playWaveform2Ch(pressureDataL, pressureDataR);
+        playWaveform2Ch(pressureCalDataL, pressureCalDataR);
     }
     private void changeScopeDisplayAttitude(){
         mScopeSel=SCOPE_SEL_ATTITUDE;
@@ -1341,15 +1320,86 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         for(int i=0;i<chnCnt;i++)
             mWaveformView1.setWaveEnable(i,enable);
     }
+    private CompoundButton.OnCheckedChangeListener mOCCLPage1 = new CompoundButton.OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            //boolean checked = isChecked;
+            //stopContinueReportCmd();
+
+
+            ReportCmdTimer.removeCallbacks(ReportCmdRunnable);
+
+            if(buttonView.getId()== mSwRpt.getId()){
+                if(isChecked){
+                    mSwRpt6xL.setChecked(false);
+                    mSwRpt6xR.setChecked(false);
+                    mSwRptAttitude.setChecked(false);
+                    mSwRptPress.setChecked(false);
+                    reportType = REPORT_TYPE_NORMALMESSAGE;
+                    startContinueReportCmd();
+                }
+            }else if(buttonView.getId() == mSwRpt6xL.getId()){
+                if(isChecked){
+                    mSwRpt.setChecked(false);
+                    mSwRpt6xR.setChecked(false);
+                    mSwRptAttitude.setChecked(false);
+                    mSwRptPress.setChecked(false);
+                    reportType = REPORT_TYPE_6AXILSENSOR_LEFT;
+                    startContinueReportCmd();
+                    changeScopeDisplay6AxisLeft();
+                }
+            }else if(buttonView.getId() == mSwRpt6xR.getId()){
+                if(isChecked){
+                    mSwRpt.setChecked(false);
+                    mSwRpt6xL.setChecked(false);
+                    mSwRptAttitude.setChecked(false);
+                    mSwRptPress.setChecked(false);
+                    reportType = REPORT_TYPE_6AXILSENSOR_RIGHT;
+                    startContinueReportCmd();
+                    changeScopeDisplay6AxisRight();
+                }
+            }else if(buttonView.getId() == mSwRptAttitude.getId()){
+                if(isChecked){
+                    mSwRpt.setChecked(false);
+                    mSwRpt6xL.setChecked(false);
+                    mSwRpt6xR.setChecked(false);
+                    mSwRptPress.setChecked(false);
+                    reportType = REPORT_TYPE_ATTITUDE;
+                    startContinueReportCmd();
+                    changeScopeDisplayAttitude();
+                }
+            }else if(buttonView.getId() == mSwRptPress.getId()){
+                if(isChecked){
+                    mSwRpt.setChecked(false);
+                    mSwRpt6xL.setChecked(false);
+                    mSwRpt6xR.setChecked(false);
+                    mSwRptAttitude.setChecked(false);
+                    reportType = REPORT_TYPE_PRESSURE;
+                    startContinueReportCmd();
+                    changeScopeDisplayPressure();
+                    switchToDebugMsgExt();
+                }
+            }
+
+
+        }
+    };
     private View.OnClickListener mOCLPage1 = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+            stopContinueReportCmd();
             if(v.getId()==mBtnDevice.getId()){
                 setupConnectDialog();
-            }else if(v.getId()==mBtnCmd1.getId()){
-                /*
-                sendBleData(appCmd.txCmd1_0);
-                */
+            }else if(v.getId()==mBtnCmdSleep.getId()){
+                sendBleData(appCmd.txCmd5_1);
+            }else if(v.getId()==mTvDeviceName.getId()){
+                createRenameBleDeviceDialog();
+            }else if(v.getId()==mBtnRptFw.getId()){
+                sendBleData(appCmd.txCmd3);
+            }else if(v.getId()==mBtnRptDeviceId.getId()){
+                sendBleData(appCmd.txCmd2);
+            }
+            /*else if(v.getId()==mBtnCmd1.getId()){
                 if(buttonReportCnt<=0){
                     sendBleData(appCmd.txCmd1_0);
                 }
@@ -1394,11 +1444,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     changeScopeDisplayAttitude();
                     startContinueReportCmd();
                 }
-            }else if(v.getId()==mBtnCmd7.getId()){
-                sendBleData(appCmd.txCmd5_1);
-            }else if(v.getId()==mBtnCmd8.getId()){
-                sendBleData(appCmd.txCmd5_2);
-            }
+            }*/
         }
     };
     private View.OnClickListener mOCLPageSensorReset = new View.OnClickListener() {
@@ -1409,8 +1455,16 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             //
             if(v.getId() == mBtnGyroReset.getId()){
                 setZeroType = SENSOR_SET_ZERO_GSENSOR;
-                createProgressDialog("Please keep the handle steady");
+                createProgressDialog("Please keep the handles steady");
                 startCheckIfGSensorSteady();
+                startAvgSampling();
+            }else if(v.getId() == mBtnPressReset.getId()){
+                setZeroType = SENSOR_PRESSURE_RESET;
+                createProgressDialog("Please keep the handles steady and release your hand from handles");
+                startAvgSampling();
+            }else if(v.getId() == mBtnPressCalibrate.getId()){
+                setZeroType = SENSOR_PRESSURE_CALIBRATION;
+                createProgressDialog("Please keep the handles steady and release your hand from handles");
                 startAvgSampling();
             }
         }
@@ -1541,23 +1595,13 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         @Override
         public void onClick(View v) {
             if (v.getId() == mBtnBleRenameSubmit.getId()) {
-                //String newName = mEtNewBleName.getText().toString();
-                if (mDeviceNewName.length() > 0 && mDeviceNewName != null) {
-                    mEtNewBleName.setText(mDeviceNewName);
+                if (mDeviceNewName != null) {
+                    if(mDeviceNewName.length()>0)
+                        mEtNewBleName.setText(mDeviceNewName);
                 }else{
                     return;
                 }
-                byte[] nameData = mDeviceNewName.getBytes();
-                appCmd.txCmdD = new byte[nameData.length + 3];
-                appCmd.txCmdD[0] = (byte) 0xAA;
-                appCmd.txCmdD[1] = (byte) (nameData.length + 2);
-                appCmd.txCmdD[2] = (byte) 0x0D;
-                System.arraycopy(nameData, 0, appCmd.txCmdD, 3, nameData.length);
-
-                dataBytes = new byte[appCmd.txCmdD.length];
-                System.arraycopy(appCmd.txCmdD, 0, dataBytes, 0, dataBytes.length);
-                afterConfirmWriteStep = CONFIRM_BLE_RENAME;
-                mConfirmWriteDialog.show();
+                renameBleDevice();
                 //updateDebugInfo(bytesToString(appCmd.txCmdD, " "));
 
             } else if (v.getId() == mBtnBleTxPowerSubmit.getId()) {
@@ -1614,13 +1658,14 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
 
         LayoutInflater inflater = getLayoutInflater();
         pageBottomViews = new ArrayList<View>();
-        pageBottomViews.add(inflater.inflate(R.layout.layout_debugfun1, null));
+        pageBottomViews.add(inflater.inflate(R.layout.layout_debug_blerename,null));
+        pageBottomViews.add(inflater.inflate(R.layout.layout_debug_report, null));
         pageBottomViews.add(inflater.inflate(R.layout.layout_debug_sensor, null));
-        pageBottomViews.add(inflater.inflate(R.layout.layout_debug_resband_init, null));
+        //pageBottomViews.add(inflater.inflate(R.layout.layout_debug_resband_init, null));
         pageBottomViews.add(inflater.inflate(R.layout.layout_debug_userinfo, null));
         pageBottomViews.add(inflater.inflate(R.layout.layout_debug_pairing, null));
         pageBottomViews.add(inflater.inflate(R.layout.layout_debug_ota, null));
-        pageBottomViews.add(inflater.inflate(R.layout.layout_debug_blerename,null));
+
 
         viewPagerBottom = (ViewPager) findViewById(R.id.viewPagerBottom);
         viewPagerBottom.setAdapter(new PagerAdapter() {
@@ -1711,6 +1756,10 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
 
             }
         });
+        viewPagerBottom.setCurrentItem(1,true);
+
+
+
         pageTopViews = new ArrayList<View>();
         pageTopViews.add(inflater.inflate(R.layout.layout_debug_message, null));
         //pageTopViews.add(inflater.inflate(R.layout.layout_debug_message_ext,null));
@@ -1803,6 +1852,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         }
         mTvVersion.setText("version: " + verName);
         mBtnDevice = (Button) findViewById(R.id.device_button);
+        mTvDeviceName.setOnClickListener(mOCLPage1);
         mBtnDevice.setOnClickListener(mOCLPage1);
 
         //setupPageMessageViewComponents();
@@ -1861,6 +1911,46 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
 
         updateConnectionState();
     }
+    private void renameBleDevice(){
+
+        //String newName = mEtNewBleName.getText().toString();
+
+
+        byte[] nameData = mDeviceNewName.getBytes();
+        appCmd.txCmdD = new byte[nameData.length + 3];
+        appCmd.txCmdD[0] = (byte) 0xAA;
+        appCmd.txCmdD[1] = (byte) (nameData.length + 2);
+        appCmd.txCmdD[2] = (byte) 0x0D;
+        System.arraycopy(nameData, 0, appCmd.txCmdD, 3, nameData.length);
+
+        dataBytes = new byte[appCmd.txCmdD.length];
+        System.arraycopy(appCmd.txCmdD, 0, dataBytes, 0, dataBytes.length);
+        afterConfirmWriteStep = CONFIRM_BLE_RENAME;
+        //mConfirmWriteDialog.show();
+        Message msg = new Message();
+        msg.what = MSG_SHOW_CONFIRM_WRITE_DIALOG;
+        mMsgHandler.sendMessage(msg);
+    }
+    private void createRenameBleDeviceDialog(){
+        if (mDeviceNewName == null || mConnectState != STATE_CONNECTED) return;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Rename Bluetooth Device");
+        builder.setMessage("Confirm rename device\nfrom:\t"+mDeviceName+"\nto:\t"+ mDeviceNewName + "\t?");
+        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                renameBleDevice();
+            }
+        });
+        builder.create().show();
+    }
     private void createProgressDialog(String title){
         Message msg = new Message();
         msg.what = MSG_SHOW_WAITING_FEEDBACK_DIALOG;
@@ -1917,6 +2007,15 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         }
         return bytes;
 
+    }
+    public static byte[] floatToBytes(float fdata){
+        byte[] bytes = new byte[4];
+        int temp = Float.floatToIntBits(fdata);
+        for(int i=0;i<bytes.length;i++){
+            bytes[i] = new Integer(temp).byteValue();
+            temp = temp>>8;
+        }
+        return bytes;
     }
     public static byte[] doubleToBytes(double ddata){
         byte[] bytes = new byte[8];
@@ -2219,6 +2318,25 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         return true;
     }
 
+    private boolean checkIfPSensorRSteady(){
+
+        int window = WAVEFORM_DATA_LENGTH;
+        if(samplePointer > window){
+            int max = pressureRawDataR[pressureRawDataR.length-1];
+            int min = max;
+            for(int i=0;i<window;i++){
+                int val = pressureRawDataR[pressureRawDataR.length-1-i];
+                if(max < val)max = val;
+                if(min < val)min = val;
+            }
+            if(max-min > AVG_DIFF_TH){
+                Log.v(TAG,"diffP"+"="+(max-min));
+                return false;
+            }
+        }
+        samplePointer++;
+        return true;
+    }
     private boolean processData(byte[] data){
         if(data.length < 4 || data==null ){
             clearInfoDisplay();
@@ -2251,8 +2369,8 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             int rollR = data[10];
             valPressureL =((data[11] & 0xFF) | ((data[12])<<8));
             valPressureR =((data[13] & 0xFF) | ((data[14])<<8));
-            float pressL = valPressureL * 10 / 1000;
-            float pressR = valPressureR * 10 / 1000;
+            float pressL = (float)valPressureL * 10 / 1000;
+            float pressR = (float)valPressureR * 10 / 1000;
             //pressL = 99.998f;
             //pressR = -999.998f;
             DecimalFormat format = new DecimalFormat("0.000");
@@ -2261,18 +2379,20 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             //valPressureRawL =((data[15] & 0xFF) | ((data[16])<<8));
             //valPressureRawR =((data[16] & 0xFF) | ((data[18])<<8));
 
-            appendDataArray(pressureDataL, data, 11);
-            appendDataArray(pressureDataR, data, 13);
+            appendDataArray(pressureCalDataL, valPressureL);
+            appendDataArray(pressureCalDataR, valPressureR);
+            mTvMsgCh1.setText(Integer.toString(pressureCalDataL[pressureCalDataL.length-1]));
+            mTvMsgCh2.setText(Integer.toString(pressureCalDataR[pressureCalDataR.length-1]));
 
             int debugData0 = (data[15] & 0xFF) | ((data[16])<<8);
             int debugData1 = (data[17] & 0xFF) | ((data[18])<<8);
 
-            String debugDataStr0 =  new StringBuilder().append(String.format("%02X", data[15])).append(String.format("%02X", data[16])).toString();
-            String debugDataStr1 =  new StringBuilder().append(String.format("%02X", data[17])).append(String.format("%02X", data[18])).toString();
+            String debugDataStr0 =  new StringBuilder().append(String.format("%02X", data[16])).append(String.format("%02X", data[15])).toString();
+            String debugDataStr1 =  new StringBuilder().append(String.format("%02X", data[18])).append(String.format("%02X", data[17])).toString();
 
             switch(mScopeSel){
                 case SCOPE_SEL_PRESSURE:
-                    playWaveform2Ch(pressureDataL,pressureDataR);
+                    playWaveform2Ch(pressureCalDataL,pressureCalDataR);
                     break;
 
             }
@@ -2577,6 +2697,72 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             }
         }
         if (dataType == 0x10){
+            int[] pressData = new int[8];
+            for(int i=0;i<pressData.length;i++){
+                pressData[i]= ((data[i*2+3] & 0xFF) | ((data[i*2+4])<<8));
+            }
+
+            appendDataArray(pressureRawDataL, pressData[0]);
+            appendDataArray(pressureRawDataR, pressData[1]);
+            appendDataArray(pressureZeroDataL,pressData[2]);
+            appendDataArray(pressureZeroDataR,pressData[3]);
+            appendDataArray(pressureCalDataL, pressData[4]);
+            appendDataArray(pressureCalDataR, pressData[5]);
+            float pressL = (float)pressData[4] * 10 / 1000;
+            float pressR = (float)pressData[5] * 10 / 1000;
+            //pressL = 99.998f;
+            //pressR = -999.998f;
+            DecimalFormat format = new DecimalFormat("0.000");
+            String strPressL = "PressL(Kg): " + format.format(pressL);
+            String strPressR = "PressR(Kg): " + format.format(pressR);
+            mTvMsg30.setText(strPressL);
+            mTvMsg31.setText(strPressR);
+            mTvMsgCh1.setText(Integer.toString(pressureCalDataL[pressureCalDataL.length-1]));
+            mTvMsgCh2.setText(Integer.toString(pressureCalDataR[pressureCalDataR.length-1]));
+            mTvMsgExt00.setText("p-left:\t"+Integer.toString(pressData[0]));
+            mTvMsgExt01.setText("p-right:\t"+Integer.toString(pressData[1]));
+            mTvMsgExt10.setText("pl-zero:\t"+Integer.toString(pressData[2]));
+            mTvMsgExt11.setText("pr-zero:\t"+Integer.toString(pressData[3]));
+            mTvMsgExt20.setText("pl-cal:\t"+Integer.toString(pressData[4]));
+            mTvMsgExt21.setText("pr-cal:\t"+Integer.toString(pressData[5]));
+            mTvMsgExt30.setText("pl:\t"+Integer.toString(pressData[6]));
+            mTvMsgExt31.setText("pr:\t"+Integer.toString(pressData[7]));
+
+            switch(setZeroType){
+                case SENSOR_PRESSURE_RESET:
+                    if(!checkIfPSensorRSteady()){
+                        stopAvgSamplingPSensor();
+                        createNoticeDialog("Please keep the handle steady and try again");
+                    }else{
+                        if(samplePointer > 1500/AVG_SAMPLE_INTERVAL2){
+                            stopAvgSamplingPSensor();
+                            mProgressDialog.dismiss();
+                            sendPSensorInitCommand();
+                            //createNoticeDialog("Please keep the handle steady and try again");
+                        }
+                    }
+                    break;
+                case SENSOR_PRESSURE_CALIBRATION:
+                    if(!checkIfPSensorRSteady()){
+                        stopAvgSamplingPSensor();
+                        createNoticeDialog("Please keep the handle steady and try again");
+                    }else{
+                        if(samplePointer > 1500/AVG_SAMPLE_INTERVAL2){
+                            stopAvgSamplingPSensor();
+                            mProgressDialog.dismiss();
+                            sendPSensorCalCommand();
+                            //createNoticeDialog("Please keep the handle steady and try again");
+                        }
+                    }
+                    break;
+            }
+
+            switch(mScopeSel){
+                case SCOPE_SEL_PRESSURE:
+                    playWaveform2Ch(pressureCalDataL,pressureCalDataR);
+                    break;
+
+            }
 
         }
         if (dataType == 0xff) {
@@ -2585,10 +2771,68 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
         return true;
     }
 
+    private void pressureCalbration(){
+
+
+    }
+
     private void sendGSensorInitCommand(){
         createProgressDialog("Wait Handles Feedback");
         appCmd.txCmdB_3[7] = 0x33;
         sendBleData(appCmd.txCmdB_3);
+    }
+    private void sendPSensorCalCommand(){
+        createProgressDialog("Wait Handles Feedback");
+        int sumL = 0;
+        int sumR = 0;
+        for(int i=0;i<AVG_SAMPLE_LENGTH;i++){
+            sumL += pressureZeroDataL[pressureZeroDataL.length-1-AVG_SAMPLE_LENGTH+i];
+            sumR += pressureZeroDataR[pressureZeroDataR.length-1-AVG_SAMPLE_LENGTH+i];
+        }
+        int avgL = sumL / AVG_SAMPLE_LENGTH;
+        int avgR = sumR / AVG_SAMPLE_LENGTH;
+        float f1 = 1.0f;
+        float f2 = 1.0f;
+
+        int input = Integer.parseInt(mEtRefVal.getText().toString());
+        f1 = (float) input /10;
+        f2 = (float) input /10;
+        f1 = f1/(float)avgL;
+        f2 = f2/(float)avgR;
+        byte[] pressCalLByte = floatToBytes(f1);
+        byte[] pressCalRByte = floatToBytes(f2);
+        appCmd.txCmdB_2[7] = 0x23;
+        appCmd.txCmdB_2[8] = pressCalRByte[0];
+        appCmd.txCmdB_2[9] = pressCalRByte[1];
+        appCmd.txCmdB_2[10] = pressCalRByte[2];
+        appCmd.txCmdB_2[11] = pressCalRByte[3];
+        appCmd.txCmdB_2[12] = pressCalLByte[0];
+        appCmd.txCmdB_2[13] = pressCalLByte[1];
+        appCmd.txCmdB_2[14] = pressCalLByte[2];
+        appCmd.txCmdB_2[15] = pressCalLByte[3];
+        sendBleData(appCmd.txCmdB_2);
+
+
+
+    }
+    private void sendPSensorInitCommand(){
+        createProgressDialog("Wait Handles Feedback");
+        int sumL = 0;
+        int sumR = 0;
+        for(int i=0;i<AVG_SAMPLE_LENGTH;i++){
+            sumL += pressureRawDataL[pressureRawDataL.length-1-AVG_SAMPLE_LENGTH+i];
+            sumR += pressureRawDataR[pressureRawDataR.length-1-AVG_SAMPLE_LENGTH+i];
+        }
+        int avgL = sumL / AVG_SAMPLE_LENGTH;
+        int avgR = sumR / AVG_SAMPLE_LENGTH;
+        byte[] avgLbyte = intToBytes(avgL);
+        byte[] avgRbyte = intToBytes(avgR);
+        appCmd.txCmdB_1[7] = 0x13;
+        appCmd.txCmdB_1[8] = avgRbyte[0];
+        appCmd.txCmdB_1[9] = avgRbyte[1];
+        appCmd.txCmdB_1[12] = avgLbyte[0];
+        appCmd.txCmdB_1[13] = avgLbyte[1];
+        sendBleData(appCmd.txCmdB_1);
     }
 
 
