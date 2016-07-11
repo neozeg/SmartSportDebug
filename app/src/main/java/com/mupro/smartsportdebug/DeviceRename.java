@@ -8,12 +8,13 @@ import java.util.Random;
 public class DeviceRename {
     private static String PREFIX = "EPT";
     private static String SUFFIX = "L";
+    private static int REN_TAB[] = {8,0,10,6,3,9,11,2,5,4,1,7};
     static String getNewName(String address){
         String midName = address.replace(":","");
-        int[] images = get_RandomID(midName.length());
+        //int[] images = get_RandomID(midName.length());
         StringBuilder builder = new StringBuilder();
-        for(int i=0;i<images.length;i++){
-            builder.append(midName.charAt(images[i]));
+        for(int i=0;i<REN_TAB.length;i++){
+            builder.append(midName.charAt(REN_TAB[i]));
         }
         String newMidName = builder.toString();
         return PREFIX + newMidName + SUFFIX;

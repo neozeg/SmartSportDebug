@@ -2267,6 +2267,9 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             int debugData0 = (data[15] & 0xFF) | ((data[16])<<8);
             int debugData1 = (data[17] & 0xFF) | ((data[18])<<8);
 
+            String debugDataStr0 =  new StringBuilder().append(String.format("%02X", data[15])).append(String.format("%02X", data[16])).toString();
+            String debugDataStr1 =  new StringBuilder().append(String.format("%02X", data[17])).append(String.format("%02X", data[18])).toString();
+
             switch(mScopeSel){
                 case SCOPE_SEL_PRESSURE:
                     playWaveform2Ch(pressureDataL,pressureDataR);
@@ -2366,8 +2369,8 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     break;
                 default:mTvMsg01.setText("-");break;
             }
-            mTvMsg11.setText(Integer.toString(debugData0));
-            mTvMsg12.setText(Integer.toString(debugData1));
+            mTvMsg11.setText(Integer.toString(debugData0)+"("+debugDataStr0+")");
+            mTvMsg12.setText(Integer.toString(debugData1)+"("+debugDataStr1+")");
             mTvMsg20.setText("Roll L: " + Integer.toString(rollL));
             mTvMsg21.setText("Roll R: " + Integer.toString((rollR)));
             mTvMsg22.setText("Count: " + Integer.toString((count)));
@@ -2528,6 +2531,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                         if(!checkIfGSensorRSteady()){
                             stopAvgSamplingGSensor();
                             stopCheckIfGSensorSteady();
+                            createNoticeDialog("Please keep the handle steady and try again");
                             updateDebugInfo("Please keep the Handles Steady");
                         }else{
                             if(checkSensorRCnt>WAVEFORM_DATA_LENGTH){
