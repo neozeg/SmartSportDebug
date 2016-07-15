@@ -711,6 +711,7 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     private static int AVG_DIFF_TH = 50;
     private int samplePointer;
     private int setZeroType = 0;
+    private int setZeroType0 = 0;
     private void startAvgSampling(){
         samplePointer=0;
         avgSamplingTimer.postDelayed(avgSamplingRunnable,AVG_SAMPLE_INTERVAL);
@@ -1455,15 +1456,18 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
             //
             if(v.getId() == mBtnGyroReset.getId()){
                 setZeroType = SENSOR_SET_ZERO_GSENSOR;
+                setZeroType0 = setZeroType;
                 createProgressDialog("Please keep the handles steady");
                 startCheckIfGSensorSteady();
                 startAvgSampling();
             }else if(v.getId() == mBtnPressReset.getId()){
                 setZeroType = SENSOR_PRESSURE_RESET;
+                setZeroType0 = setZeroType;
                 createProgressDialog("Please keep the handles steady and release your hand from handles");
                 startAvgSampling();
             }else if(v.getId() == mBtnPressCalibrate.getId()){
                 setZeroType = SENSOR_PRESSURE_CALIBRATION;
+                setZeroType0 = setZeroType;
                 createProgressDialog("Please keep the handles steady and release your hand from handles");
                 startAvgSampling();
             }
@@ -2381,8 +2385,6 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
 
             appendDataArray(pressureCalDataL, valPressureL);
             appendDataArray(pressureCalDataR, valPressureR);
-            mTvMsgCh1.setText(Integer.toString(pressureCalDataL[pressureCalDataL.length-1]));
-            mTvMsgCh2.setText(Integer.toString(pressureCalDataR[pressureCalDataR.length-1]));
 
             int debugData0 = (data[15] & 0xFF) | ((data[16])<<8);
             int debugData1 = (data[17] & 0xFF) | ((data[18])<<8);
@@ -2392,6 +2394,8 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
 
             switch(mScopeSel){
                 case SCOPE_SEL_PRESSURE:
+                    mTvMsgCh1.setText(Integer.toString(pressureCalDataL[pressureCalDataL.length-1]));
+                    mTvMsgCh2.setText(Integer.toString(pressureCalDataR[pressureCalDataR.length-1]));
                     playWaveform2Ch(pressureCalDataL,pressureCalDataR);
                     break;
 
@@ -2579,6 +2583,13 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
                     sSensorSetType = "G Sensor ";
                     break;
             }
+            switch(setZeroType0){
+                case SENSOR_PRESSURE_CALIBRATION:
+                case SENSOR_PRESSURE_RESET:
+                    mSwRptPress.setChecked(true);
+                    break;
+            }
+            setZeroType0 = 0;
             String result = sSensorSetType + "Initialize " + sResult;
             mTvInfoDebug.setText(result);
             createNoticeDialog(result);
