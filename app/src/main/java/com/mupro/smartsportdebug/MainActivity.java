@@ -43,6 +43,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mupro.smartsportdebug.Views.MyGLSurfView;
 import com.mupro.smartsportdebug.Views.WaveformView;
 
 import java.io.FileInputStream;
@@ -56,6 +57,8 @@ import java.util.Map;
 public class MainActivity extends BleActivity implements BleDevice.BleBroadcastReceiver {
 
     private final static String TAG = "MainActivity";
+
+    private final static boolean IS_2D_SCOPE = false;
 
     private final static int SENDCODE_INTERVAL = 100;
     private final static int UPLOAD_INTERVAL = 5;
@@ -98,7 +101,10 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     //View Components
 
     //private Button mBtnLt,mBtnRt,mBtnUp,mBtnDn,mBtnF1,mBtnF2;
-    private WaveformView mWaveformView1;
+
+    private MyGLSurfView mWaveformView1;
+    //private WaveformView mWaveformView1;
+
     private ScrollView mSVDebugMsg,mSVDebugScope;
     private Button mBtnScPress,mBtnScRoll,mBtnSc3d;
     private TextView mTvCh1,mTvCh2,mTvCh3,mTvCh4,mTvCh5,mTvCh6;
@@ -918,7 +924,8 @@ public class MainActivity extends BleActivity implements BleDevice.BleBroadcastR
     }
     private void setupPageScopeViewComponents(){
         mSVDebugScope = (ScrollView) findViewById(R.id.scrollViewWaveform);
-        mWaveformView1 = (WaveformView) findViewById(R.id.WaveformView1);
+        //mWaveformView1 = (WaveformView) findViewById(R.id.WaveformView1);
+        mWaveformView1 = (MyGLSurfView) findViewById(R.id.WaveformView1);
         //mWaveformView1.setZOrderOnTop(true);
         //mWaveformView1.getHolder().setFormat(PixelFormat.TRANSLUCENT);
         mBtnScPress = (Button) findViewById(R.id.buttonScopePress);
